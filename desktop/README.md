@@ -2,6 +2,8 @@
 
 适用于 Windows 10/11 64 位，无需 HBuilderX、Node.js 或本地预览服务。
 
+直接下载：[安装版 EXE](https://github.com/zaiming11/LocalVideo/releases/download/v1.0.1/LocalVideo-1.0.1-Windows-x64-Setup.exe) · [绿色版 ZIP](https://github.com/zaiming11/LocalVideo/releases/download/v1.0.1/LocalVideo-1.0.1-Windows-x64-Green.zip) · [全部版本](https://github.com/zaiming11/LocalVideo/releases)。Android 下载与项目介绍见 [项目首页](../README.md)。
+
 - **推荐安装版**：`dist/LocalVideo-1.0.1-Windows-x64-Setup.exe`。安装一次，以后从桌面快捷方式打开。不要每次打开安装包。
 - **免安装绿色版**：`dist/LocalVideo-1.0.1-Windows-x64-Green.zip`。完整解压一次，运行其中的 `本地影库.exe`。需保留整个文件夹，不能单独复制 EXE。
 - 本机打包后也可直接运行 `dist/win-unpacked/本地影库.exe`。
@@ -17,7 +19,7 @@
 需要 Node.js 与 HBuilderX Vue 3 编译插件。默认插件目录为 `E:/HBuilderX/plugins`，可通过环境变量 `UNI_HBUILDERX_PLUGINS` 修改。
 
 ```powershell
-cd G:\video-app\LocalVideo\desktop
+cd LocalVideo/desktop
 npm.cmd ci
 npm.cmd test
 npm.cmd run pack

@@ -2,9 +2,7 @@ const startupEnteredAt = Date.now()
 const { app, BrowserWindow, protocol, ipcMain, dialog, session, Menu } = require('electron')
 const fs = require('node:fs')
 const path = require('node:path')
-const { Readable } = require('node:stream')
 const { MediaLibrary, fileResponse, extensions, mimeTypes } = require('./media-library.cjs')
-const { handleRemoteRequest, fetchBuffer, buildProxyUrl, ProxyError, MAX_TEXT_BYTES } = require('./remote-proxy.cjs')
 
 // Opt-in startup measurement uses its own profile and never opens the user's library.
 const measureStartup = process.argv.includes('--measure-startup') && process.env.LOCALVIDEO_STARTUP_REPORT && process.env.LOCALVIDEO_STARTUP_PROFILE
@@ -16,10 +14,7 @@ if (measureStartup) {
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'localvideo', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
-  { scheme: 'localmedia', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
-  // Online sources need both CORS (for fetch from the app frame) and stream
-  // (so <video> can seek a proxied segment without buffering it whole).
-  { scheme: 'remotemedia', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }
+  { scheme: 'localmedia', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }
 ])
 app.setName('本地影库')
 app.setAppUserModelId('com.localvideo.desktop')
@@ -45,28 +40,6 @@ else {
     protocol.handle('localmedia', async (request) => {
       const file = library.resolve(request.url)
       return file ? fileResponse(request, file, mimeTypes[path.extname(file).toLowerCase()] || 'video/mp4') : new Response(null, { status: 404 })
-    })
-    // Remote playback and artwork. The renderer never talks to a media host
-    // directly; every request lands here, gets its address re-validated, and is
-    // forwarded only when it resolves to a public host.
-    protocol.handle('remotemedia', async (request) => {
-      let result
-      try {
-        result = await handleRemoteRequest(request, { toProxyUrl: toRemoteProxyUrl })
-      } catch (error) {
-        return new Response(error?.message || '代理请求失败', {
-          status: error instanceof ProxyError && error.code === 'BLOCKED' ? 403 : 502,
-          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
-        })
-      }
-      // Same-origin convention as fileResponse(): only the bundled app frame may
-      // read a proxied body.
-      const headers = new Headers({ 'Access-Control-Allow-Origin': 'localvideo://app' })
-      for (const [key, value] of Object.entries(result.headers || {})) headers.set(key, String(value))
-      const body = result.body == null || result.body.length === 0 || Buffer.isBuffer(result.body)
-        ? result.body
-        : Readable.toWeb(result.body)
-      return new Response(body, { status: result.status, headers })
     })
     // All access originates from the bundled main frame; paths are never accepted in URLs.
     const trusted = (event) => {
