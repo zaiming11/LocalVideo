@@ -9,12 +9,11 @@
 | 平台 | 下载 | 版本 | 使用方式 |
 | --- | --- | --- | --- |
 | Windows 10/11 · 64 位 | [下载安装版 EXE（推荐）](https://github.com/zaiming11/LocalVideo/releases/download/v1.0.1/LocalVideo-1.0.1-Windows-x64-Setup.exe) | 1.0.1 | 安装一次，以后从桌面或开始菜单打开 |
-| Windows 10/11 · 64 位 | [下载免安装绿色版 ZIP](https://github.com/zaiming11/LocalVideo/releases/download/v1.0.1/LocalVideo-1.0.1-Windows-x64-Green.zip) | 1.0.1 | 完整解压，运行文件夹内的 `本地影库.exe` |
 | Android 6.0 及以上 | [下载 Android APK](https://github.com/zaiming11/LocalVideo/releases/download/v1.0.1/LocalVideo-1.0.0-Android.apk) | 1.0.0 | 在手机上打开 APK 并按系统提示安装 |
 
 [查看全部版本与更新说明](https://github.com/zaiming11/LocalVideo/releases) · [下载 SHA-256 校验文件](https://github.com/zaiming11/LocalVideo/releases/download/v1.0.1/SHA256SUMS.txt)
 
-请下载上表中的应用文件。GitHub 自动生成的 **Source code (zip / tar.gz)** 是源码包，不能直接安装。Windows 绿色版需要保留解压后的整个文件夹，不能只复制其中的 EXE。
+请下载上表中的应用文件。GitHub 自动生成的 **Source code (zip / tar.gz)** 是源码包，不能直接安装。
 
 ## 开始使用
 
@@ -56,7 +55,7 @@ npm.cmd run pack
 $env:UNI_HBUILDERX_PLUGINS = 'D:/HBuilderX/plugins'
 ```
 
-也可以在项目根目录双击 `一键打包EXE.bat`。安装版和绿色版输出到 `desktop/dist/`。详细说明见 [Windows 桌面版文档](desktop/README.md)。
+也可以在项目根目录双击 `一键打包EXE.bat`。安装包输出到 `desktop/dist/`。详细说明见 [Windows 桌面版文档](desktop/README.md)。
 
 ### Android
 
