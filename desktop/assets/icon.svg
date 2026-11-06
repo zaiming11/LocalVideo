@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#143638"/><stop offset=".5" stop-color="#09191E"/><stop offset="1" stop-color="#03080F"/>
+    </linearGradient>
+    <linearGradient id="neon" x1="0" y1="1" x2="1" y2="0">
+      <stop stop-color="#24E2CA"/><stop offset=".48" stop-color="#7CF5AD"/><stop offset="1" stop-color="#E8FF63"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#90EBD1" stop-opacity=".6"/><stop offset="1" stop-color="#1A444C" stop-opacity=".5"/>
+    </linearGradient>
+    <radialGradient id="halo"><stop stop-color="#1D9E85" stop-opacity=".4"/><stop offset="1" stop-color="#051018" stop-opacity="0"/></radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="13"/></filter>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="116" fill="url(#base)"/>
+  <rect x="18" y="18" width="476" height="476" rx="114" fill="none" stroke="url(#edge)" stroke-width="3"/>
+  <circle cx="250" cy="242" r="217" fill="url(#halo)"/>
+  <circle cx="256" cy="256" r="167" fill="none" stroke="#476267" stroke-opacity=".24" stroke-width="4"/>
+  <path d="M378 138A170 170 0 1 0 416 314" fill="none" stroke="url(#neon)" stroke-width="14" stroke-linecap="round" opacity=".65" filter="url(#glow)"/>
+  <path d="M378 138A170 170 0 1 0 416 314" fill="none" stroke="url(#neon)" stroke-width="10" stroke-linecap="round"/>
+  <path d="M193 161Q193 147 208 155L359 242Q381 255 359 268L208 355Q193 363 193 348Z" fill="#41D8AD" opacity=".45" filter="url(#glow)"/>
+  <path d="M194 177Q194 161 210 170L362 257Q382 269 362 281L210 369Q194 378 194 360Z" fill="#087D78"/>
+  <path d="M194 159Q194 143 210 152L362 239Q382 251 362 263L210 351Q194 360 194 342Z" fill="url(#neon)"/>
+  <path d="M207 159L359 247" fill="none" stroke="#F4FFD2" stroke-width="4" stroke-linecap="round" opacity=".75"/>
+  <circle cx="423" cy="238" r="9" fill="#DFFF80"/>
+  <circle cx="423" cy="238" r="9" fill="#DFFF80" filter="url(#glow)"/>
+</svg>

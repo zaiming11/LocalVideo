@@ -1,0 +1,32 @@
+{
+	"pages": [
+		{
+			"path": "pages/home/home",
+			"style": {
+				"navigationStyle": "custom",
+				"backgroundColor": "#07080A",
+				"app-plus": {
+					"bounce": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/player/player",
+			"style": {
+				"navigationStyle": "custom",
+				"backgroundColor": "#000000",
+				"app-plus": {
+					"bounce": "none"
+				}
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "white",
+		"navigationBarTitleText": "本地影库",
+		"navigationBarBackgroundColor": "#07080A",
+		"backgroundColor": "#07080A",
+		"backgroundTextStyle": "dark"
+	},
+	"uniIdRouter": {}
+}

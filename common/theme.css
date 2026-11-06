@@ -1,0 +1,218 @@
+/* ------------------------------------------------------------------ *
+ * Local Cinema — global design tokens and resets
+ * ------------------------------------------------------------------ */
+:root {
+	--bg: #07080a;
+	--bg-soft: #0b0d10;
+	--surface: #111418;
+	--surface-2: #171b20;
+	--surface-3: #20252b;
+	--line: rgba(255, 255, 255, 0.08);
+	--line-strong: rgba(255, 255, 255, 0.14);
+	--text: #f4f6f1;
+	--text-2: #c2c8bf;
+	--muted: #858d84;
+	--dim: #5c635c;
+	--accent: #e8ff63;
+	--accent-soft: rgba(232, 255, 99, 0.12);
+	--mint: #65e0c2;
+	--danger: #ff7777;
+	--radius-sm: 10px;
+	--radius: 16px;
+	--radius-lg: 24px;
+	--safe-top: calc(var(--status-bar-height, 0px) + env(safe-area-inset-top, 0px));
+	--safe-bottom: env(safe-area-inset-bottom, 0px);
+	--shadow-card: 0 18px 50px rgba(0, 0, 0, 0.28);
+	--font-display: "HarmonyOS Sans SC", "MiSans", "PingFang SC", "Microsoft YaHei", sans-serif;
+	--font-body: "HarmonyOS Sans SC", "MiSans", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+page,
+body {
+	background: var(--bg);
+	color: var(--text);
+	font-family: var(--font-body);
+	font-size: 14px;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+view,
+text,
+image,
+input,
+textarea,
+button,
+scroll-view,
+slider,
+video {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	overscroll-behavior-y: none;
+}
+
+image {
+	display: block;
+}
+
+button {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	line-height: inherit;
+	font-family: inherit;
+	color: inherit;
+}
+
+button::after {
+	border: 0;
+}
+
+input,
+textarea {
+	font-family: inherit;
+	color: inherit;
+}
+
+/* Hide scrollbars while retaining scroll on desktop previews. */
+::-webkit-scrollbar {
+	width: 0;
+	height: 0;
+	display: none;
+}
+
+.safe-top {
+	padding-top: calc(var(--safe-top) + 10px);
+}
+
+.safe-bottom {
+	padding-bottom: calc(var(--safe-bottom) + 18px);
+}
+
+.no-select {
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.glass {
+	background: rgba(17, 20, 24, 0.78);
+	backdrop-filter: blur(22px) saturate(140%);
+	-webkit-backdrop-filter: blur(22px) saturate(140%);
+}
+
+.mono {
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: "tnum";
+}
+
+.clamp-1 {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.clamp-2 {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	overflow: hidden;
+}
+
+.press {
+	transition: transform 0.16s ease, opacity 0.16s ease;
+}
+
+.press:active {
+	transform: scale(0.96);
+	opacity: 0.82;
+}
+
+.icon-button {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.icon-button:hover {
+	background: rgba(255, 255, 255, 0.1);
+	border-color: rgba(255, 255, 255, 0.16);
+}
+
+.icon-button:active {
+	transform: scale(0.94);
+}
+
+.accent-text {
+	color: var(--accent);
+}
+
+.muted-text {
+	color: var(--muted);
+}
+
+.section-kicker {
+	font-size: 10px;
+	letter-spacing: 0.24em;
+	text-transform: uppercase;
+	color: var(--muted);
+	font-weight: 700;
+}
+
+.dot {
+	width: 3px;
+	height: 3px;
+	border-radius: 50%;
+	background: var(--dim);
+	flex-shrink: 0;
+}
+
+.divider {
+	height: 1px;
+	background: var(--line);
+}
+
+@keyframes fade-up {
+	from { opacity: 0; transform: translateY(10px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+@keyframes soft-pulse {
+	0%, 100% { opacity: 0.55; }
+	50% { opacity: 1; }
+}
+
+@keyframes spin {
+	to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+	0% { background-position: 200% 0; }
+	100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}

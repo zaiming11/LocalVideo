@@ -1,0 +1,76 @@
+{
+  "name": "local-video-desktop",
+  "productName": "本地影库",
+  "version": "1.0.1",
+  "description": "本地影库 Windows 桌面播放器",
+  "author": "LocalVideo",
+  "private": true,
+  "main": "main.cjs",
+  "scripts": {
+    "icons": "node generate-icons.cjs",
+    "build:web": "node build-web.cjs",
+    "start": "node node_modules/electron/install.js && electron .",
+    "pack": "npm run icons && npm run build:web && electron-builder --win nsis zip --x64",
+    "pack:portable": "npm run icons && npm run build:web && electron-builder --win portable --x64",
+    "measure:startup": "node measure-startup.cjs",
+    "test": "node --test test/*.test.cjs"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "2.6.2",
+    "electron": "45.2.3",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.localvideo.desktop",
+    "asar": true,
+    "electronLanguages": ["zh-CN", "en-US"],
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "media-library.cjs",
+      "package.json",
+      "assets/icon.ico"
+    ],
+    "extraResources": [
+      {
+        "from": "web",
+        "to": "web"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "artifactName": "LocalVideo-${version}-Windows-x64-Setup.exe",
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "本地影库",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "LocalVideo-${version}-Windows-x64-Portable.exe"
+    },
+    "artifactName": "LocalVideo-${version}-Windows-x64-Green.${ext}"
+  }
+}

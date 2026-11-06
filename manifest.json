@@ -1,0 +1,76 @@
+{
+    "name" : "本地影库",
+    "appid" : "__UNI__8B2E700",
+    "description" : "本地视频播放器",
+    "versionName" : "1.0.0",
+    "versionCode" : "100",
+    "transformPx" : false,
+    "app-plus" : {
+        "screenOrientation" : [ "portrait-primary" ],
+        "usingComponents" : true,
+        "nvueStyleCompiler" : "uni-app",
+        "compilerVersion" : 3,
+        "splashscreen" : {
+            "alwaysShowBeforeRender" : true,
+            "waiting" : true,
+            "autoclose" : true,
+            "delay" : 0
+        },
+        "modules" : {
+            "VideoPlayer" : {}
+        },
+        "distribute" : {
+            "icons" : {
+                "android" : {
+                    "ldpi" : "static/app-icons/android-ldpi.png",
+                    "mdpi" : "static/app-icons/android-mdpi.png",
+                    "hdpi" : "static/app-icons/android-hdpi.png",
+                    "xhdpi" : "static/app-icons/android-xhdpi.png",
+                    "xxhdpi" : "static/app-icons/android-xxhdpi.png",
+                    "xxxhdpi" : "static/app-icons/android-xxxhdpi.png"
+                }
+            },
+            "android" : {
+                "minSdkVersion" : 23,
+                "targetSdkVersion" : 35,
+                "permissions" : [
+                    "<uses-permission android:name=\"android.permission.READ_MEDIA_VIDEO\"/>",
+                    "<uses-permission android:name=\"android.permission.READ_MEDIA_VISUAL_USER_SELECTED\"/>",
+                    "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\" android:maxSdkVersion=\"32\"/>",
+                    "<uses-permission android:name=\"android.permission.WAKE_LOCK\"/>"
+                ]
+            },
+            "ios" : {
+                "dSYMs" : false
+            },
+            "sdkConfigs" : {}
+        }
+    },
+    "quickapp" : {},
+    "mp-weixin" : {
+        "appid" : "",
+        "setting" : {
+            "urlCheck" : false
+        },
+        "usingComponents" : true
+    },
+    "mp-alipay" : {
+        "usingComponents" : true
+    },
+    "mp-baidu" : {
+        "usingComponents" : true
+    },
+    "mp-toutiao" : {
+        "usingComponents" : true
+    },
+    "h5" : {
+        "title" : "本地影库",
+        "router" : {
+            "mode" : "hash"
+        }
+    },
+    "uniStatistics" : {
+        "enable" : false
+    },
+    "vueVersion" : "3"
+}

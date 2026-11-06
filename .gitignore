@@ -1,0 +1,13 @@
+unpackage/
+.DS_Store
+.hbuilderx/
+desktop/node_modules/
+desktop/dist/
+desktop/web/
+desktop/.startup-check/
+.backup/
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
