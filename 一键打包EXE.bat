@@ -42,7 +42,7 @@ if not exist "package-lock.json" (
 )
 
 echo [1/3] 检查桌面打包依赖...
-node -e "const fs=require('fs'); const p=require('./package.json'); for(const [name, version] of Object.entries(p.devDependencies || {})){const f='node_modules/'+name+'/package.json'; if(!fs.existsSync(f) || JSON.parse(fs.readFileSync(f,'utf8')).version!==version) process.exit(1)}" >nul 2>&1
+node -e "const fs=require('fs'); const p=require('./package.json'); for(const [name, version] of Object.entries({...p.devDependencies,...p.dependencies})){const f='node_modules/'+name+'/package.json'; if(!fs.existsSync(f) || JSON.parse(fs.readFileSync(f,'utf8')).version!==version) process.exit(1)}" >nul 2>&1
 if errorlevel 1 goto install_dependencies
 goto dependencies_ready
 
@@ -61,7 +61,7 @@ if errorlevel 1 (
 :dependencies_ready
 if /i "%~1"=="--check" goto checked
 echo.
-echo [2/3] 生成统一图标、编译页面并封装安装版和绿色版...
+echo [2/3] 生成统一图标、编译页面并封装独立 Windows 安装版（无需安卓环境）...
 echo 请关闭正在运行的“本地影库”，避免文件占用导致打包失败。
 echo 打包可能需要几分钟，请勿关闭此窗口。
 echo.
@@ -75,17 +75,11 @@ if not exist "dist\LocalVideo-*-Windows-x64-Setup.exe" (
     echo [错误] 命令已结束，但未找到预期的安装版 EXE。
     goto failed
 )
-if not exist "dist\LocalVideo-*-Windows-x64-Green.zip" (
-    echo [错误] 命令已结束，但未找到预期的绿色版 ZIP。
-    goto failed
-)
 echo.
 echo [3/3] 打包成功！
 echo 成品目录：%CD%\dist
 echo 推荐：运行 Setup.exe 安装一次，以后从桌面快捷方式打开。
-echo 免安装：将 Green.zip 完整解压，以后运行其中的“本地影库.exe”。
-echo 请保留绿色版的整个文件夹，不要单独复制其中的 EXE。
-echo 这两种版本都不会在每次启动时重复解压。
+echo Windows 版独立运行，无需安装安卓环境或连接手机。
 start "" explorer.exe "%CD%\dist"
 goto succeeded
 

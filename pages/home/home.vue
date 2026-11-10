@@ -1,10 +1,11 @@
 <template>
-	<view class="home-page no-select">
+	<view class="home-page no-select" :class="{ 'is-folder-page': isFolderPage }" @touchstart="folderBackSwipe.start" @touchmove="folderBackSwipe.move" @touchend="folderBackSwipe.end" @touchcancel="folderBackSwipe.cancel">
 		<view class="ambient ambient--one" />
 		<view class="ambient ambient--two" />
 
 		<!-- top bar -->
-		<view class="topbar safe-top">
+		<SubpageHeader v-if="isFolderPage" class="folder-page-header" :title="folderFilter" safe-area @back="closeFolder" />
+		<view v-else-if="activeTab !== 'tvbox'" class="topbar safe-top">
 			<view class="brand press" @click="scrollToTop">
 				<view class="brand-mark">
 					<image class="brand-image" src="/static/logo.png" mode="aspectFit" />
@@ -15,6 +16,7 @@
 				</view>
 			</view>
 			<view class="top-actions">
+				<view class="tvbox-entry" role="button" @click="openTVBox">TVBox</view>
 				<view class="icon-button" @click="toggleSearch">
 					<AppIcon name="search" :size="18" color="#E9EDE4" />
 				</view>
@@ -24,9 +26,9 @@
 			</view>
 		</view>
 
-		<view class="home-content">
+		<view class="home-content" :class="{ 'tvbox-home': activeTab === 'tvbox', 'tvbox-popup-open': tvboxPopupOpen }">
 			<!-- preview notice -->
-			<view v-if="showPreviewNotice" class="preview-notice">
+			<view v-if="showPreviewNotice && activeTab === 'library'" class="preview-notice">
 				<view class="preview-icon"><AppIcon name="sparkles" :size="15" color="#E8FF63" /></view>
 				<view class="preview-copy">
 					<text class="preview-title">{{ previewNoticeTitle }}</text>
@@ -38,8 +40,9 @@
 			</view>
 
 			<!-- library tab -->
-			<template v-if="activeTab === 'library'">
-				<view v-if="featured" class="hero" @click="openFeatured">
+			<TVBoxPanel v-if="activeTab === 'tvbox'" ref="tvboxPanel" @settings="switchTab('settings')" />
+			<template v-else-if="activeTab === 'library'">
+				<view v-if="!isFolderPage && featured" class="hero" @click="openFeatured">
 					<image
 						v-if="featured.thumb && !heroImageError"
 						class="hero-image"
@@ -93,7 +96,7 @@
 					</view>
 				</view>
 
-				<view v-else class="empty-hero">
+				<view v-else-if="!isFolderPage" class="empty-hero">
 					<view class="empty-hero-glow" />
 					<view class="empty-hero-icon"><AppIcon name="film" :size="28" color="#E8FF63" :stroke="1.5" /></view>
 					<text class="empty-hero-kicker">YOUR PRIVATE SCREENING ROOM</text>
@@ -112,7 +115,7 @@
 				</view>
 
 				<!-- stats -->
-				<view class="stats-strip">
+				<view v-if="!isFolderPage" class="stats-strip">
 					<view class="stat-item">
 						<view class="stat-icon"><AppIcon name="film" :size="15" color="#65E0C2" /></view>
 						<view class="stat-copy">
@@ -144,7 +147,7 @@
 						<view class="section-title-wrap">
 							<text class="section-kicker">LIBRARY</text>
 							<view class="section-title-row">
-								<text class="section-title">全部视频</text>
+								<text class="section-title">{{ isFolderPage ? folderFilter : '全部视频' }}</text>
 								<text class="section-count mono">{{ filteredVideos.length }}</text>
 							</view>
 						</view>
@@ -382,7 +385,11 @@
 				</view>
 
 				<view class="settings-group">
-					<text class="settings-group-label">播放体验</text>
+					<text class="settings-group-label">在线片库</text>
+                    <TVBoxPanel ref="tvboxSettingsPanel" mode="settings" @popup-change="tvboxPopupOpen = $event" />
+                </view>
+                <view class="settings-group">
+                    <text class="settings-group-label">播放体验</text>
 					<view class="settings-card">
 						<view class="setting-row">
 							<view class="setting-icon setting-icon--mint"><AppIcon name="playlist" :size="17" color="#65E0C2" /></view>
@@ -475,11 +482,12 @@
 
 				<view class="settings-group">
 					<text class="settings-group-label">关于</text>
+					<AppUpdateSettings />
 					<view class="settings-card">
 						<view class="about-block">
 							<view class="about-mark"><AppIcon name="logo" :size="42" color="#E8FF63" /></view>
 							<view class="about-copy">
-								<text class="about-name">本地影库 <text class="about-version">v1.0.0</text></text>
+								<text class="about-name">本地影库 <text class="about-version">v{{ updateState.currentVersion }}</text></text>
 								<text class="about-desc">为本地视频而生的轻量播放器。不上传、不分析、不打扰。</text>
 								<view class="about-tags">
 									<text>uni-app</text>
@@ -683,7 +691,12 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onLoad, onBackPress } from '@dcloudio/uni-app'
+import TVBoxPanel from '../../components/TVBoxPanel.vue'
+import SubpageHeader from '../../components/SubpageHeader.vue'
+import { createSwipeBack } from '../../core/swipe-back.mjs'
+import AppUpdateSettings from '../../components/AppUpdateSettings.vue'
+import { updateState } from '../../core/update/client.js'
 import AppIcon from '../../components/AppIcon.vue'
 import AppToast from '../../components/AppToast.vue'
 import BottomSheet from '../../components/BottomSheet.vue'
@@ -691,6 +704,7 @@ import VideoCard from '../../components/VideoCard.vue'
 import {
 	addVideos,
 	clearLibrary,
+	getVideoById,
 	initStore,
 	progressPercent,
 	saveState,
@@ -698,7 +712,7 @@ import {
 	seedPreviewLibrary,
 	setCurrent,
 	setLastTab,
-	setQueue,
+	setQueueForVideo,
 	setSetting,
 	showToast,
 	state,
@@ -731,6 +745,7 @@ initStore()
 const { sortedVideos, totalDuration, totalSize, continueInfo } = useVideoStore()
 
 const isH5 = detectH5()
+function openTVBox() { switchTab('tvbox') }
 const isApp = detectApp()
 const isDesktop = typeof window !== 'undefined' && !!window.localVideoDesktop
 if (isH5 && !isDesktop) {
@@ -738,17 +753,38 @@ if (isH5 && !isDesktop) {
 	if (!previewLoaded) seedDemoLibrary()
 }
 const tabs = [
-	{ key: 'library', label: '媒体库', icon: 'film' },
+	{ key: 'tvbox', label: 'TVBox', icon: 'film' },
+	{ key: 'library', label: '媒体库', icon: 'grid' },
 	{ key: 'folders', label: '文件夹', icon: 'folder' },
 	{ key: 'recent', label: '最近', icon: 'clock' },
 	{ key: 'settings', label: '设置', icon: 'settings' }
 ]
 const validTabs = tabs.map((item) => item.key)
-const activeTab = ref(validTabs.includes(state.lastTab) ? state.lastTab : 'library')
+const activeTab = ref('tvbox')
+const tvboxPopupOpen = ref(false)
+onLoad(options => { if ([...validTabs, 'library'].includes(options?.tab)) activeTab.value = options.tab })
 const query = ref('')
 const searchVisible = ref(false)
 const formatFilter = ref('all')
 const folderFilter = ref('')
+const tvboxPanel = ref(null)
+const tvboxSettingsPanel = ref(null)
+const isFolderPage = computed(() => activeTab.value === 'library' && !!folderFilter.value)
+const folderBackSwipe = createSwipeBack({ canGoBack: () => isFolderPage.value && !showSortSheet.value && !showAddSheet.value && !showFormatGuide.value, onBack: closeFolder })
+function closeFolder() {
+	if (!isFolderPage.value) return false
+	folderFilter.value = ''; activeTab.value = 'folders'; searchVisible.value = false
+	uni.pageScrollTo({ scrollTop: 0, duration: 180 })
+	return true
+}
+onBackPress(() => {
+	for (const sheet of [showSortSheet, showAddSheet, showFormatGuide]) {
+		if (sheet.value) { sheet.value = false; return true }
+	}
+	if (activeTab.value === 'tvbox' && tvboxPanel.value?.handleBack()) return true
+	if (activeTab.value === 'settings' && tvboxSettingsPanel.value?.handleBack()) return true
+	return closeFolder()
+})
 const showSortSheet = ref(false)
 const showAddSheet = ref(false)
 const showFormatGuide = ref(false)
@@ -839,7 +875,7 @@ const recentEntries = computed(() => {
 	for (const entry of source) {
 		if (!entry || seen.has(entry.id)) continue
 		seen.add(entry.id)
-		const video = state.videos.find((item) => item.id === entry.id)
+		const video = getVideoById(entry.id)
 		const duration = Number(entry.duration) || Number(video?.duration) || 0
 		const position = Number(entry.position) || 0
 		const percent = duration > 0 ? Math.min(1, position / duration) : Number(entry.percent) || 0
@@ -1036,6 +1072,7 @@ function setSortDirection(dir) {
 }
 
 function switchTab(tab) {
+	if (isFolderPage.value) folderFilter.value = ''
 	activeTab.value = tab
 	if (tab !== 'library') {
 		searchVisible.value = false
@@ -1096,7 +1133,7 @@ function openFolder(name) {
 	formatFilter.value = 'all'
 	activeTab.value = 'library'
 	setTimeout(() => {
-		uni.pageScrollTo({ selector: '#library', duration: 280 })
+		uni.pageScrollTo({ scrollTop: 0, duration: 180 })
 	}, 120)
 }
 
@@ -1107,9 +1144,7 @@ function openVideo(video) {
 		return
 	}
 	const queue = filteredVideos.value.length ? filteredVideos.value : sortedVideos.value
-	const ids = queue.map((item) => item.id)
-	if (!ids.includes(video.id)) ids.unshift(video.id)
-	setQueue(ids, video.id)
+	setQueueForVideo(video, queue)
 	setCurrent(video.id)
 	uni.navigateTo({
 		url: `/pages/player/player?id=${encodeURIComponent(video.id)}`
@@ -1131,6 +1166,10 @@ function openFeatured() {
 
 function resumeEntry(entry) {
 	if (!entry.video || !entry.video.url) {
+		if (String(entry.id).startsWith('tvbox_') || entry.video?.source === 'tvbox') {
+			showToast('这条旧记录缺少播放信息，请从 TVBox 重新打开影片', 'error')
+			return
+		}
 		showToast('原文件已不在媒体库，请重新导入', 'error')
 		openAddSheet()
 		return
@@ -1408,6 +1447,7 @@ async function onDrop(event) {
 }
 .brand-copy { display: flex; flex-direction: column; gap: 1px; }
 .brand-image { width: 42px; height: 42px; }
+.tvbox-entry { padding: 10px 12px; border: 1px solid #405334; border-radius: 20px; color: #dafa6b; font-size: 12px; cursor: pointer; }
 .brand-title { font-size: 19px; font-weight: 850; letter-spacing: -0.04em; line-height: 1.15; }
 .brand-sub { font-size: 8px; font-weight: 700; letter-spacing: 0.3em; color: var(--muted); }
 
@@ -2250,4 +2290,9 @@ async function onDrop(event) {
 	.hero-sub { font-size: 10px; }
 	.history-poster { width: 112px; }
 }
+
+.tvbox-home{padding-top:calc(24px + var(--status-bar-height, 0px));}
+.home-content.tvbox-popup-open{z-index:150;}
+.folder-page-header{padding-left:24px;padding-right:24px}
+.home-page.is-folder-page{touch-action:pan-y}
 </style>

@@ -1,0 +1,19 @@
+LocalVideo Android Spider host dependencies
+
+The host bridge bundles these unmodified third-party libraries, converted to DEX:
+
+Gson 2.11.0 - Copyright Google Inc. - Apache License 2.0
+https://github.com/google/gson
+OkHttp 3.12.13 - Copyright Square, Inc. - Apache License 2.0
+https://github.com/square/okhttp
+Okio 1.17.5 - Copyright Square, Inc. - Apache License 2.0
+https://github.com/square/okio
+ZXing core 3.5.3 - Copyright ZXing authors - Apache License 2.0
+https://github.com/zxing/zxing
+SLF4J API and NOP 1.7.36 - Copyright QOS.ch - MIT License
+https://github.com/qos-ch/slf4j
+
+See Apache-2.0.txt and SLF4J-LICENSE.txt for license terms.
+Android SDK and R8 are build-time tools and are not bundled in bridge.jar.
+Third-party TVBox spiders are downloaded from user-configured addresses at runtime;
+their code and native libraries are not included in the application distribution.

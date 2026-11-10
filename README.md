@@ -6,12 +6,14 @@
 
 下载后即可安装或运行，无需准备 Node.js、HBuilderX 或开发环境。
 
-| 平台 | 下载 | 版本 | 使用方式 |
-| --- | --- | --- | --- |
-| Windows 10/11 · 64 位 | [下载安装版 EXE（推荐）](https://github.com/zaiming11/LocalVideo/releases/download/v1.0.1/LocalVideo-1.0.1-Windows-x64-Setup.exe) | 1.0.1 | 安装一次，以后从桌面或开始菜单打开 |
-| Android 6.0 及以上 | [下载 Android APK](https://github.com/zaiming11/LocalVideo/releases/download/v1.0.1/LocalVideo-1.0.0-Android.apk) | 1.0.0 | 在手机上打开 APK 并按系统提示安装 |
+| 平台 | GitHub 下载 | 加速镜像下载 | 版本 | 使用方式 |
+| --- | --- | --- | --- | --- |
+| Windows 10/11 · 64 位 | [安装版 EXE](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.5-android-1.0.5/LocalVideo-1.1.0-alpha.5-Windows-x64-Setup.exe) | [镜像下载 EXE](https://gh-proxy.com/https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.5-android-1.0.5/LocalVideo-1.1.0-alpha.5-Windows-x64-Setup.exe) | 1.1.0-alpha.5 | 安装后从桌面或开始菜单打开 |
+| Android 6.0 及以上 · ARM64 | [Android APK](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.5-android-1.0.5/LocalVideo-1.0.5-Android.apk) | [镜像下载 APK](https://gh-proxy.com/https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.5-android-1.0.5/LocalVideo-1.0.5-Android.apk) | 1.0.5 | 在手机上打开 APK 并安装 |
 
-[查看全部版本与更新说明](https://github.com/zaiming11/LocalVideo/releases) · [下载 SHA-256 校验文件](https://github.com/zaiming11/LocalVideo/releases/download/v1.0.1/SHA256SUMS.txt)
+[查看全部版本与更新说明](https://github.com/zaiming11/LocalVideo/releases) · [下载 SHA-256 校验文件](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.5-android-1.0.5/SHA256SUMS.txt)
+
+GitHub 无法访问时可尝试加速镜像。镜像由第三方提供，同步可能延迟；应用内支持自动加速、GitHub 直连和自定义镜像。Windows 当前为测试版，欢迎反馈使用问题。
 
 请下载上表中的应用文件。GitHub 自动生成的 **Source code (zip / tar.gz)** 是源码包，不能直接安装。
 
@@ -26,7 +28,11 @@ Android 版扫描手机视频时需要视频访问权限，也可以选择文件
 
 ## 从源码运行与打包
 
+`feat/tvbox-integration` 分支的 Windows 版独立运行，无需安卓环境、模拟器或手机。支持 PC 兼容的 XML / JSON、Type 4 HTTP 接口及直播源；Android JAR / DEX 插件仅由安卓 App 执行。兼容性说明见 [TVBox 接入记录](docs/tvbox-compatibility.md)。上方下载链接仍为已发布的稳定版本。
+
 项目使用 **Vue 3 + uni-app**，Windows 版通过 **Electron** 封装。
+
+当前开发代码已接入 Android 与 Windows **LibVLC** 播放器，Windows 使用内置运行库的原生播放窗口；浏览器预览保留 HTML5。原生依赖准备、打包说明和源码链接见 [LibVLC 接入说明](docs/libvlc.md)。
 
 ```text
 components/    通用界面组件
@@ -62,5 +68,7 @@ $env:UNI_HBUILDERX_PLUGINS = 'D:/HBuilderX/plugins'
 使用 HBuilderX 打开项目，在 `manifest.json` 中检查应用信息和 Android 打包配置，通过 HBuilderX 的 App 打包功能生成 APK。正式发布时使用自己的应用签名配置。
 
 ## 问题反馈
+
+应用更新使用 GitHub Releases，默认镜像优先、失败自动直连，无需配置账号或密码。安装包含新版更新功能的应用后，可在“设置 → 关于 → 应用更新”检查、下载并确认安装，也可开启启动时自动检查。旧客户端需先手动安装一次新版；后续发布流程见 [GitHub 更新说明](docs/github-updates.md)。
 
 请在 [Issues](https://github.com/zaiming11/LocalVideo/issues) 中描述系统版本、应用版本、操作步骤和实际现象；播放问题可附上视频容器及编码信息。

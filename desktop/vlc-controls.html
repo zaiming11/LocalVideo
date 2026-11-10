@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'"><title>LibVLC 播放控制</title><link rel="stylesheet" href="vlc-controls.css"></head>
+<body>
+<div id="brightness"></div><main id="stage">
+  <header class="controls"><span id="title">本地影库 · LibVLC</span><button id="more">•••</button></header>
+  <div id="status" role="status"></div>
+  <button id="lock" class="controls">锁定屏幕</button>
+  <div id="unlock" class="controls" hidden><span>向右滑动解锁</span><button id="unlock-thumb" aria-label="向右滑动解锁">🔒</button></div>
+  <section id="menu" hidden>
+    <button id="fill">满屏观影</button>
+    <label>播放速度 <select id="rate"><option>0.5</option><option>0.75</option><option selected>1</option><option>1.25</option><option>1.5</option><option>2</option></select></label>
+    <label>音量 <input id="volume" type="range" min="0" max="100" value="100"></label>
+    <label>亮度 <input id="light" type="range" min="5" max="100" value="100"></label>
+    <button id="return">关闭播放窗口</button>
+  </section>
+  <footer class="controls">
+    <div class="progress"><time id="current">00:00</time><input id="seek" type="range" min="0" max="10000" value="0" aria-label="播放进度"><time id="duration">00:00</time></div>
+    <div class="buttons"><button id="previous">上一集</button><button id="back">−10 秒</button><button id="play">播放</button><button id="forward">+10 秒</button><button id="next">下一集</button><button id="mute">静音</button><span class="space"></span><button id="landscape">横屏全屏</button><button id="portrait">竖屏全屏</button><button id="exit" hidden>退出全屏</button></div>
+  </footer>
+</main><script src="vlc-controls.js"></script></body></html>

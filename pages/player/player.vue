@@ -7,10 +7,18 @@
 		:class="{ 'is-fullscreen': isFullscreen, 'is-idle': !showControls, 'is-fill': isFullscreen && state.settings.fullscreenFill }"
 		@click="onStageTap"
 		@mousemove="onPointerMove"
+		@touchstart="pageBackSwipe.start"
+		@touchmove="pageBackSwipe.move"
+		@touchend="pageBackSwipe.end"
+		@touchcancel="pageBackSwipe.cancel"
 	>
 		<view class="player-ambient" :style="{ backgroundImage: current?.thumb ? `url('${current.thumb}')` : 'none' }" />
 		<view class="player-ambient-mask" />
-		<view ref="videoHostRef" class="h5-video-host" v-html="videoMarkup" />
+		<view ref="videoHostRef" class="h5-video-host" v-html="videoMarkup" @touchstart.stop />
+		<view v-if="isDesktopVlc && !errorMessage" class="desktop-vlc-launch" @click.stop="focusDesktopPlayer">
+			<AppIcon name="play" :size="30" color="#E8FF63" />
+			<text>正在使用 LibVLC 原生播放窗口</text><text class="desktop-vlc-action">点击返回播放窗口</text>
+		</view>
 
 		<view class="player-top-gradient" :class="{ 'is-visible': showControls }" />
 		<view class="player-bottom-gradient" :class="{ 'is-visible': showControls }" />
@@ -39,9 +47,9 @@
 		</view>
 
 		<!-- top bar -->
-		<view class="player-topbar" :class="{ 'is-visible': showControls }">
+		<view class="player-topbar" :class="{ 'is-visible': showControls || !isFullscreen }">
 			<view class="player-top-left">
-				<view class="player-icon-btn press" @click.stop="goBack">
+				<view class="player-icon-btn press" role="button" aria-label="返回上一页" @click.stop="goBack">
 					<AppIcon name="arrow-left" :size="21" color="#F5F7F2" />
 				</view>
 				<view class="player-title-block">
@@ -217,8 +225,14 @@
 					<view class="control-btn press" @click.stop="showPlaylist = true">
 						<AppIcon name="playlist" :size="19" color="#F5F7F2" />
 					</view>
-					<view class="control-btn press" @click.stop="toggleFullscreen">
-						<AppIcon :name="isFullscreen ? 'fullscreen-exit' : 'fullscreen'" :size="19" color="#F5F7F2" />
+					<view class="control-orientation-btn press" role="button" aria-label="横屏全屏" @click.stop="requestPlayerFullscreen('landscape')">
+						<AppIcon name="fullscreen" :size="17" color="#F5F7F2" /><text>横屏全屏</text>
+					</view>
+					<view class="control-orientation-btn press" role="button" aria-label="竖屏全屏" @click.stop="requestPlayerFullscreen('portrait')">
+						<AppIcon name="fullscreen" :size="17" color="#F5F7F2" /><text>竖屏全屏</text>
+					</view>
+					<view v-if="isFullscreen" class="control-btn press" role="button" aria-label="退出全屏" @click.stop="toggleFullscreen">
+						<AppIcon name="fullscreen-exit" :size="19" color="#F5F7F2" />
 					</view>
 				</view>
 			</view>
@@ -324,9 +338,9 @@
 
 	<!-- ============================= Android App ============================= -->
 	<!-- #ifndef H5 -->
-	<view class="app-player-page" :class="{ 'is-fullscreen': appFullscreen }">
+	<view class="app-player-page" :class="{ 'is-fullscreen': appFullscreen }" @touchstart="pageBackSwipe.start" @touchmove="pageBackSwipe.move" @touchend="pageBackSwipe.end" @touchcancel="pageBackSwipe.cancel">
 		<view v-show="!appFullscreen" class="app-player-header">
-			<view class="player-icon-btn press" @click="goBack">
+			<view class="player-icon-btn press" role="button" aria-label="返回上一页" @click="goBack">
 				<AppIcon name="arrow-left" :size="21" color="#F5F7F2" />
 			</view>
 			<view class="app-header-copy">
@@ -339,29 +353,21 @@
 		</view>
 
 		<!-- 保持同一个原生播放器，切换全屏时只更新布局和画面比例。 -->
-		<view class="app-video-stage" :class="{ 'is-fullscreen': appFullscreen }" :style="appStageStyle">
-			<video
-				v-memo="[current?.url, current?.thumb, appScreenLocked, appControlsVisible, appFullscreen, state.settings.fullscreenFill, appLayoutRevision, appVideoStyle, appPlayStrategy]"
+		<view class="app-video-stage" :class="{ 'is-fullscreen': appFullscreen }" :style="appStageStyle" @touchstart.stop>
+			<LibVLCPlayer
+				ref="appPlayerRef"
 				id="app-player"
 				class="app-video"
 				:data-layout-revision="appLayoutRevision"
 				:style="appVideoStyle"
-				:src="current?.url || ''"
-				:poster="current?.thumb || ''"
+				:src="appSource"
 				:controls="!appFullscreen || appControlsVisible"
-				:autoplay="true"
-				:show-fullscreen-btn="false"
-				:show-play-btn="!appScreenLocked"
-				:show-center-play-btn="!appScreenLocked"
-				:enable-play-gesture="!appScreenLocked"
-				:vslide-gesture="false"
-				:vslide-gesture-in-fullscreen="false"
-				:enable-progress-gesture="!appScreenLocked && !appFullscreen"
-				:show-progress="true"
-				:show-loading="true"
-				codec="hardware"
-				:play-strategy="appPlayStrategy"
-				:object-fit="appFullscreen && state.settings.fullscreenFill ? 'fill' : 'contain'"
+				:live="isLiveVideo"
+				:fullscreen="appFullscreen"
+				:fill="appFullscreen && state.settings.fullscreenFill"
+				:locked="appScreenLocked"
+				:visible="!appVideoError && !showMoreSheet && !showEndCard"
+				:revision="appLayoutRevision"
 				@play="onAppPlay"
 				@pause="onAppPause"
 				@timeupdate="onAppTimeUpdate"
@@ -406,10 +412,24 @@
 			</view>
 
 			<view class="app-progress-panel">
-				<view class="app-progress-track"><view class="app-progress-fill" :style="{ width: `${appProgressPercent}%` }" /></view>
+				<slider
+					v-if="!isLiveVideo"
+					class="app-progress-slider"
+					:value="sliderValue"
+					:max="1000"
+					:min="0"
+					:block-size="12"
+					:disabled="!(duration > 0) || appVideoError"
+					block-color="#E8FF63"
+					activeColor="#E8FF63"
+					backgroundColor="rgba(255,255,255,0.12)"
+					@changing="onSliderChanging"
+					@change="onSliderChange"
+				/>
+				<view v-else class="app-live-status"><view class="app-auto-dot" /><text>直播中</text></view>
 				<view class="app-progress-row">
-					<text class="mono">{{ formatDuration(position) }} / {{ formatDuration(duration) }}</text>
-					<text>{{ appProgressPercent }}%</text>
+					<text class="mono">{{ isLiveVideo ? formatDuration(displayTime) : `${formatDuration(displayTime)} / ${formatDuration(duration)}` }}</text>
+					<text>{{ isLiveVideo ? '实时播放' : `${appProgressPercent}%` }}</text>
 				</view>
 			</view>
 
@@ -426,9 +446,13 @@
 					<AppIcon name="next" :size="21" color="#F5F7F2" />
 					<text>下一集</text>
 				</view>
-				<view class="app-control-btn press" @click="requestAppFullscreen">
+				<view class="app-control-btn press" role="button" @click="requestAppFullscreen('landscape')">
 					<AppIcon name="fullscreen" :size="21" color="#F5F7F2" />
-					<text>全屏</text>
+					<text>横屏全屏</text>
+				</view>
+				<view class="app-control-btn press" role="button" @click="requestAppFullscreen('portrait')">
+					<AppIcon name="fullscreen" :size="21" color="#F5F7F2" />
+					<text>竖屏全屏</text>
 				</view>
 			</view>
 
@@ -503,7 +527,7 @@
 			</view>
 
 			<view class="app-player-footer">
-				<text>本地播放 · 文件不会离开你的设备</text>
+				<text>LibVLC 原生播放</text>
 			</view>
 		</view>
 
@@ -553,8 +577,8 @@
 </template>
 
 <script setup>
-import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { onBackPress, onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBackPress, onHide, onLoad, onPageScroll, onShow, onUnload } from '@dcloudio/uni-app'
 import AppIcon from '../../components/AppIcon.vue'
 import AppToast from '../../components/AppToast.vue'
 import BottomSheet from '../../components/BottomSheet.vue'
@@ -584,20 +608,32 @@ import {
 } from '../../core/utils.js'
 import { openWithSystemPlayer } from '../../core/media.js'
 import { createAppFullscreenControls } from '../../core/app-fullscreen-controls.js'
-import { getAndroidPlayStrategy } from '../../core/android-playback.js'
+// #ifdef APP-PLUS
+import LibVLCPlayer from '../../components/LibVLCPlayer.vue'
+// #endif
+// #ifdef H5
+import { createDesktopVlc } from '../../core/libvlc-desktop.js'
+// #endif
+import { fullscreenViewport } from '../../core/fullscreen-layout.mjs'
 import { createAppPlaybackAdjustments } from '../../core/app-playback-adjustments.js'
+import { resolveTVBoxVideo, loadHls } from '../../core/tvbox/client.js'
+import { createSwipeBack } from '../../core/swipe-back.mjs'
 
 initStore()
 const { sortedVideos } = useVideoStore()
 const isH5 = detectH5()
 const isApp = detectApp()
-const instance = getCurrentInstance()
+const isDesktopVlc = typeof window !== 'undefined' && !!window.localVideoDesktop?.vlcOpen
+const appPlayerRef = ref(null)
 
 const videoMarkup = '<video id="h5-video" class="h5-video" playsinline webkit-playsinline preload="metadata"></video>'
 const shellRef = ref(null)
 const videoHostRef = ref(null)
 const currentId = ref('')
 const current = computed(() => getVideoById(currentId.value))
+const isLiveVideo = computed(() => current.value?.source === 'tvbox' && current.value?.online?.site === null)
+const onlineAppUrl = ref('')
+const appSource = computed(() => current.value?.source === 'tvbox' ? onlineAppUrl.value : current.value?.url || '')
 const queueVideos = computed(() => state.queue.map(getVideoById).filter(Boolean))
 const currentIndex = computed(() => queueVideos.value.findIndex((video) => video.id === currentId.value))
 const queueIndexLabel = computed(() => {
@@ -625,11 +661,11 @@ const loading = ref(true)
 const showControls = ref(true)
 const isFullscreen = ref(false)
 const appFullscreen = ref(false)
+const fullscreenDirection = ref('landscape')
 const appScreenLocked = ref(false)
 const appControlsVisible = ref(false)
 const appVolume = ref(1)
 const appBrightness = ref(0.5)
-const appPlayStrategy = ref(0)
 const appViewport = ref({ width: 0, height: 0 })
 const appStageStyle = computed(() => appFullscreen.value ? { width: `${appViewport.value.width}px`, height: `${appViewport.value.height}px` } : {})
 const appVideoStyle = computed(() => appFullscreen.value ? appStageStyle.value : { width: '100%', height: '100%' })
@@ -645,6 +681,7 @@ const showSpeed = ref(false)
 const showMoreSheet = ref(false)
 const showNextCard = ref(false)
 const showEndCard = ref(false)
+const pageBackSwipe = createSwipeBack({ canGoBack: () => !isFullscreen.value && !appFullscreen.value && !appScreenLocked.value && !showPlaylist.value && !showSpeed.value && !showMoreSheet.value, onBack: goBack })
 const countdown = ref(5)
 const errorMessage = ref('')
 const appVideoError = ref(false)
@@ -655,6 +692,10 @@ const seekPreview = ref(0)
 const rateOptions = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
 let videoEl = null
+let sourceRevision = 0
+let hlsPlayer = null
+let onlineH5Source = null
+let sourceChanging = false
 let appContext = null
 let hideTimer = null
 let countdownTimer = null
@@ -668,6 +709,7 @@ let pendingSeek = 0
 let pendingAppSeek = 0
 let appControlsTimer = null
 let appFullscreenControls = null
+let appOrientationApplied = ''
 let appAdjustments = null
 const lastAdjustmentAt = { volume: 0, brightness: 0 }
 
@@ -688,7 +730,7 @@ const bufferedPercent = computed(() => {
 })
 const appProgressPercent = computed(() => {
 	const total = duration.value || 0
-	return total ? Math.round(clamp(position.value / total, 0, 1) * 100) : 0
+	return total ? Math.round(clamp(displayTime.value / total, 0, 1) * 100) : 0
 })
 
 onLoad((options = {}) => {
@@ -699,7 +741,7 @@ onLoad((options = {}) => {
 onMounted(() => {
 	// #ifdef H5
 	nextTick(() => {
-		videoEl = document.getElementById('h5-video')
+		videoEl = isDesktopVlc ? createDesktopVlc({ title: () => current.value?.title, fill: () => state.settings.fullscreenFill, onNext: switchToNext, onPrevious: switchToPrev, onFitChange: value => setSetting('fullscreenFill', value), onRateChange: value => { rate.value = value } }) : document.getElementById('h5-video')
 		if (!videoEl) {
 			setTimeout(() => {
 				videoEl = document.getElementById('h5-video')
@@ -723,26 +765,36 @@ onMounted(() => {
 	syncAppAdjustments()
 	uni.onWindowResize(refreshAppControls)
 	nextTick(() => {
-		appContext = uni.createVideoContext('app-player', instance?.proxy)
+		appContext = appPlayerRef.value
+		if (current.value?.source === 'tvbox') prepareOnlineApp()
 	})
 	// #endif
 })
 
 onHide(() => {
+	if (isApp) { appContext?.pause(); appContext?.visible(false); appFullscreenControls?.update({ visible: false }) }
 	appAdjustments?.restoreBrightness()
 	saveCurrentProgress()
 	saveState({ immediate: true })
 })
 
 onShow(() => {
+	if (isApp) { appContext?.visible(true); if (appFullscreen.value) refreshAppControls() }
 	if (!isApp || !appAdjustments) return
 	try { appAdjustments.resume(); syncAppAdjustments() } catch (error) { /* activity is resuming */ }
 })
 
+onPageScroll(() => { if (isApp && !appFullscreen.value) appPlayerRef.value?.refreshLayout() })
+
 onBackPress(() => {
-	if (!isApp || !appFullscreen.value) return false
-	if (!appScreenLocked.value) exitAppFullscreen()
-	return true
+	if (isApp && appFullscreen.value) {
+		if (!appScreenLocked.value) exitAppFullscreen()
+		return true
+	}
+	for (const sheet of [showMoreSheet, showSpeed, showPlaylist]) {
+		if (sheet.value) { sheet.value = false; return true }
+	}
+	return false
 })
 
 onUnload(() => {
@@ -762,16 +814,12 @@ watch(
 		if (isH5) {
 			nextTick(() => loadCurrentH5())
 		} else {
-			nextTick(() => {
-				if (!appContext) appContext = uni.createVideoContext('app-player', instance?.proxy)
-				setTimeout(() => {
-					if (!appContext || !current.value) return
-					if (pendingAppSeek > 0) {
-						seekAppTo(pendingAppSeek)
-						pendingAppSeek = 0
-					}
-					appContext.play()
-				}, 120)
+			nextTick(async () => {
+				if (!appContext) appContext = appPlayerRef.value
+				if (current.value?.source === 'tvbox') { await prepareOnlineApp(); return }
+				onlineAppUrl.value = ''
+				sourceRevision++
+				// LibVLC 在元数据就绪后统一恢复进度，避免提前跳转丢失。
 			})
 		}
 	},
@@ -782,6 +830,19 @@ watch(currentIndex, (index) => {
 	appQueueScrollTop.value = Math.max(0, index - 3) * APP_QUEUE_ROW_HEIGHT
 	appQueueScrollY.value = appQueueScrollTop.value
 }, { immediate: true })
+
+watch(fullscreenDirection, () => {
+	if (appFullscreen.value && !appScreenLocked.value) {
+		try { applyAppFullscreenOrientation() } catch { showToast('暂时无法切换屏幕方向') }
+	}
+	if (isFullscreen.value) applyBrowserFullscreenOrientation()
+}, { flush: 'post' })
+
+watch([showMoreSheet, showEndCard], ([more, ended]) => {
+	if (!isApp || !appFullscreen.value) return
+	if (more || ended) appFullscreenControls?.update({ visible: false })
+	else refreshAppControls()
+})
 
 function onAppQueueScroll(event) {
 	appQueueScrollY.value = Number(event?.detail?.scrollTop) || 0
@@ -808,7 +869,6 @@ function initPlayback(requestedId) {
 	currentId.value = id
 	const video = getVideoById(id)
 	if (video) {
-		if (isApp) appPlayStrategy.value = getAndroidPlayStrategy(video)
 		markPlayed(video)
 		rate.value = Number(state.settings.defaultRate) || 1
 		pendingSeek = getResumePosition(video)
@@ -833,10 +893,38 @@ function bindH5Video() {
 	videoEl.addEventListener('volumechange', onH5VolumeChange)
 }
 
-function loadCurrentH5() {
+async function prepareOnlineApp() {
+	const ticket = ++sourceRevision, video = current.value
+	onlineAppUrl.value = ''; appVideoError.value = false; errorMessage.value = ''
+	try {
+		const resolved = await resolveTVBoxVideo(video)
+		if (ticket !== sourceRevision || current.value?.id !== video.id) return
+		onlineAppUrl.value = resolved.url
+	} catch (error) { if (ticket === sourceRevision) { appVideoError.value = true; errorMessage.value = error.message } }
+}
+
+async function attachHls(source, ticket) {
+	const Hls = await loadHls()
+	if (ticket !== sourceRevision || !videoEl) return
+	if (!Hls?.isSupported()) throw new Error('当前浏览器不支持此 HLS 播放方式')
+	hlsPlayer = new Hls({ maxBufferLength: 30, backBufferLength: 30 })
+	hlsPlayer.on(Hls.Events.ERROR, (_event, data) => {
+		if (data.fatal && ticket === sourceRevision) { loading.value = false; errorMessage.value = data.type === 'networkError' ? '播放列表或视频分片无法读取，请重试或切换线路。' : '当前设备无法解码此线路的视频。' }
+	})
+	hlsPlayer.on(Hls.Events.MANIFEST_PARSED, () => { if (ticket === sourceRevision) videoEl?.play().catch(() => { loading.value = false; showControls.value = true }) })
+	hlsPlayer.loadSource(source.url)
+	hlsPlayer.attachMedia(videoEl)
+}
+
+async function loadCurrentH5() {
 	if (!isH5 || !videoEl) return
 	const video = current.value
 	if (!video) return
+	const ticket = ++sourceRevision
+	sourceChanging = true
+	hlsPlayer?.destroy(); hlsPlayer = null; onlineH5Source = null
+	videoEl.pause()
+	videoEl.removeAttribute('src')
 	clearNextCountdown()
 	showEndCard.value = false
 	showNextCard.value = false
@@ -849,15 +937,29 @@ function loadCurrentH5() {
 	const saved = getResumePosition(video)
 	pendingSeek = saved
 	videoEl.poster = video.thumb || ''
-	videoEl.src = video.url
+	let source = { url: video.url, hls: false }
+	if (video.source === 'tvbox') {
+		try { source = await resolveTVBoxVideo(video) } catch (error) {
+			if (ticket === sourceRevision) { errorMessage.value = error.message; loading.value = false }
+			return
+		}
+		if (ticket !== sourceRevision || !videoEl) return
+		onlineH5Source = source
+	}
 	videoEl.volume = clamp(volume.value, 0, 1)
 	videoEl.muted = muted.value
 	videoEl.playbackRate = rate.value
 	markPlayed(video)
+	if (source.hls && !videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+		try { await attachHls(source, ticket) } catch (error) { if (ticket === sourceRevision) { errorMessage.value = error.message; loading.value = false } }
+		return
+	}
+	videoEl.src = source.url
 	try { videoEl.load() } catch (e) { /* noop */ }
 	const playPromise = videoEl.play()
 	if (playPromise && typeof playPromise.catch === 'function') {
 		playPromise.catch(() => {
+			if (ticket !== sourceRevision) return
 			isPlaying.value = false
 			loading.value = false
 			showControls.value = true
@@ -868,6 +970,7 @@ function loadCurrentH5() {
 
 function onH5LoadedMetadata() {
 	if (!videoEl) return
+	sourceChanging = false
 	duration.value = Number.isFinite(videoEl.duration) ? videoEl.duration : Number(current.value?.duration) || 0
 	loading.value = false
 	videoEl.volume = clamp(volume.value, 0, 1)
@@ -883,7 +986,7 @@ function onH5LoadedMetadata() {
 }
 
 function onH5TimeUpdate() {
-	if (!videoEl) return
+	if (!videoEl || sourceChanging) return
 	if (!isSeeking.value) position.value = videoEl.currentTime || 0
 	if (Number.isFinite(videoEl.duration)) duration.value = videoEl.duration
 	const now = Date.now()
@@ -904,7 +1007,7 @@ function onH5Pause() {
 	isPlaying.value = false
 	showControls.value = true
 	clearTimeout(hideTimer)
-	saveCurrentProgress()
+	if (!sourceChanging) saveCurrentProgress()
 }
 
 function onH5Waiting() {
@@ -936,6 +1039,16 @@ function onH5Ended() {
 }
 
 function onH5Error() {
+	if (isDesktopVlc) {
+		loading.value = false; isPlaying.value = false
+		errorMessage.value = videoEl?.error?.message || 'LibVLC 无法播放此视频，请检查文件或播放地址。'
+		return
+	}
+	if (onlineH5Source && !hlsPlayer && videoEl?.error?.code === 4) {
+		const source = onlineH5Source; onlineH5Source = null
+		attachHls(source, sourceRevision).catch(error => { loading.value = false; errorMessage.value = error.message })
+		return
+	}
 	loading.value = false
 	isPlaying.value = false
 	const code = videoEl?.error?.code
@@ -1023,7 +1136,7 @@ function togglePlay() {
 }
 
 function toggleAppPlay() {
-	if (!appContext) appContext = uni.createVideoContext('app-player', instance?.proxy)
+	if (!appContext) appContext = appPlayerRef.value
 	if (appPlaying.value) {
 		appContext.pause()
 		appPlaying.value = false
@@ -1057,10 +1170,9 @@ function seekBy(seconds) {
 
 function seekAppTo(seconds) {
 	const requested = Number(seconds)
-	if (!appContext || !Number.isFinite(requested)) return
+	if (!appContext || isLiveVideo.value || !Number.isFinite(requested)) return
 	const total = appPlaybackDuration || duration.value || Number(current.value?.duration) || 0
-	// Android IJK 的桥接层使用 Integer.parseInt，传小数会直接拒绝跳转。
-	const target = Math.floor(clamp(requested, 0, total > 0 ? Math.max(0, total - 0.1) : Math.max(0, requested)))
+	const target = clamp(requested, 0, total > 0 ? Math.max(0, total - 0.1) : Math.max(0, requested))
 	appContext.seek(target)
 	appPlaybackPosition = target
 	position.value = target
@@ -1120,7 +1232,7 @@ function setRate(value) {
 	rate.value = Number(value)
 	if (isH5 && videoEl) videoEl.playbackRate = rate.value
 	if (isApp) {
-		if (!appContext) appContext = uni.createVideoContext('app-player', instance?.proxy)
+		if (!appContext) appContext = appPlayerRef.value
 		try { appContext.playbackRate(rate.value) } catch (e) { /* noop */ }
 	}
 	showSpeed.value = false
@@ -1199,7 +1311,6 @@ function switchTo(id) {
 	showSpeed.value = false
 	errorMessage.value = ''
 	appVideoError.value = false
-	if (isApp) appPlayStrategy.value = getAndroidPlayStrategy(video)
 	currentId.value = id
 	setCurrent(id)
 	markPlayed(video)
@@ -1234,7 +1345,7 @@ function replayCurrent() {
 	}
 	position.value = 0
 	appPlaybackPosition = 0
-	if (!appContext) appContext = uni.createVideoContext('app-player', instance?.proxy)
+	if (!appContext) appContext = appPlayerRef.value
 	seekAppTo(0)
 	appContext.play()
 	appPlaying.value = true
@@ -1244,6 +1355,7 @@ function retryPlayback() {
 	errorMessage.value = ''
 	loading.value = true
 	if (isH5) {
+		if (current.value?.source === 'tvbox') { loadCurrentH5(); return }
 		if (videoEl) {
 			videoEl.load()
 			videoEl.play().catch(() => { loading.value = false })
@@ -1253,20 +1365,28 @@ function retryPlayback() {
 	retryAppPlayback()
 }
 
-function requestAppFullscreen() {
-	if (appFullscreen.value) return
+function requestAppFullscreen(direction = 'landscape') {
+	if (appScreenLocked.value) return
+	fullscreenDirection.value = direction === 'portrait' ? 'portrait' : 'landscape'
 	try {
+		if (appFullscreen.value) { applyAppFullscreenOrientation(); return }
 		// 通过页面布局进入全屏，原生 video 和播放进度始终保留。
 		appScreenLocked.value = false
 		updateAppViewport()
 		appFullscreen.value = true
 		plus.navigator.setFullscreen(true)
-		plus.screen.lockOrientation('landscape-primary')
-		refreshAppControls()
+		applyAppFullscreenOrientation()
 	} catch (e) {
 		exitAppFullscreen()
 		showToast('当前设备不支持全屏')
 	}
+}
+
+function applyAppFullscreenOrientation() {
+	if (!appFullscreen.value || appOrientationApplied === fullscreenDirection.value) return
+	plus.screen.lockOrientation(fullscreenDirection.value + '-primary')
+	appOrientationApplied = fullscreenDirection.value
+	refreshAppControls()
 }
 
 function exitAppFullscreen() {
@@ -1275,6 +1395,7 @@ function exitAppFullscreen() {
 	syncAppAdjustments()
 	appScreenLocked.value = false
 	appFullscreen.value = false
+	appOrientationApplied = ''
 	try {
 		plus.navigator.setFullscreen(false)
 		plus.screen.lockOrientation('portrait-primary')
@@ -1284,6 +1405,7 @@ function exitAppFullscreen() {
 
 function toggleFullscreenFill() {
 	setSetting('fullscreenFill', !state.settings.fullscreenFill)
+	if (isDesktopVlc) videoEl?.fit(state.settings.fullscreenFill)
 	if (isApp) refreshAppControls()
 }
 
@@ -1350,14 +1472,12 @@ function refreshAppControls() {
 					const target = clamp(seconds, 0, Math.max(0, total - 0.5))
 					seekAppTo(target)
 				},
-				readPlayback: () => ({ position: appPlaybackPosition ?? position.value, duration: appPlaybackDuration || duration.value || Number(current.value?.duration) || 0 }),
+				readPlayback: () => ({ position: appPlaybackPosition ?? position.value, duration: isLiveVideo.value ? 0 : appPlaybackDuration || duration.value || Number(current.value?.duration) || 0 }),
 				onVisibilityChange: (visible) => { appControlsVisible.value = visible },
 				readAdjustments: () => { syncAppAdjustments(); return { volume: appVolume.value, brightness: appBrightness.value } }
 			})
 		}
-		const info = uni.getSystemInfoSync()
-		const width = Math.max(info.screenWidth || info.windowWidth, info.screenHeight || info.windowHeight)
-		const height = Math.min(info.screenWidth || info.windowWidth, info.screenHeight || info.windowHeight)
+		const { width, height } = appViewport.value
 		syncAppAdjustments()
 		appFullscreenControls.update({ visible: true, locked: appScreenLocked.value, width, height, volume: appVolume.value, brightness: appBrightness.value })
 	}, 350)
@@ -1365,10 +1485,8 @@ function refreshAppControls() {
 
 function updateAppViewport() {
 	const info = uni.getSystemInfoSync()
-	appViewport.value = {
-		width: Math.max(info.screenWidth || info.windowWidth, info.screenHeight || info.windowHeight),
-		height: Math.min(info.screenWidth || info.windowWidth, info.screenHeight || info.windowHeight)
-	}
+	const next = fullscreenViewport(info, appOrientationApplied || fullscreenDirection.value)
+	if (next.width !== appViewport.value.width || next.height !== appViewport.value.height) appViewport.value = next
 }
 
 function openAppMore() {
@@ -1389,14 +1507,19 @@ function openAppMore() {
 
 function toggleAppScreenLock() {
 	appScreenLocked.value = !appScreenLocked.value
+	if (!appScreenLocked.value) {
+		try { applyAppFullscreenOrientation() } catch { /* retain the current orientation if the platform rejects it */ }
+	}
 	refreshAppControls()
 }
 
 function retryAppPlayback() {
+	if (current.value?.source === 'tvbox') { prepareOnlineApp(); return }
 	appVideoError.value = false
 	errorMessage.value = ''
 	nextTick(() => {
-		if (!appContext) appContext = uni.createVideoContext('app-player', instance?.proxy)
+		if (!appContext) appContext = appPlayerRef.value
+		appContext?.retry()
 		seekAppTo(position.value || 0)
 		appContext.play()
 	})
@@ -1409,14 +1532,27 @@ function openSystemPlayer() {
 
 function toggleFullscreen() {
 	// #ifdef H5
+	if (isDesktopVlc) { videoEl?.fullscreen(false); return }
+	if (document.fullscreenElement) document.exitFullscreen?.()
+	else requestPlayerFullscreen(fullscreenDirection.value)
+	// #endif
+	// #ifdef APP-PLUS
+	requestAppFullscreen(fullscreenDirection.value)
+	// #endif
+}
+
+function requestPlayerFullscreen(direction = 'landscape') {
+	showMoreSheet.value = false
+	// #ifdef H5
+	if (isDesktopVlc) { videoEl?.fullscreen(true, direction); return }
+	fullscreenDirection.value = direction === 'portrait' ? 'portrait' : 'landscape'
+	if (document.fullscreenElement) { applyBrowserFullscreenOrientation(); return }
 	const element = shellRef.value?.$el || shellRef.value
 	if (!document.fullscreenElement) {
 		const request = element?.requestFullscreen || element?.webkitRequestFullscreen
 		if (request) {
 			Promise.resolve(request.call(element)).then(() => {
-				if (screen.orientation?.lock) {
-					screen.orientation.lock('landscape').catch(() => {})
-				}
+				applyBrowserFullscreenOrientation()
 			}).catch(() => {
 				showToast('当前浏览器不允许进入全屏')
 			})
@@ -1425,18 +1561,24 @@ function toggleFullscreen() {
 		} else {
 			showToast('当前浏览器不支持全屏')
 		}
-	} else {
-		document.exitFullscreen?.()
 	}
 	// #endif
 	// #ifdef APP-PLUS
-	requestAppFullscreen()
+	requestAppFullscreen(direction)
+	// #endif
+}
+
+function applyBrowserFullscreenOrientation() {
+	// #ifdef H5
+	if (!document.fullscreenElement) return
+	try { screen.orientation?.lock?.(fullscreenDirection.value)?.catch(() => {}) } catch { /* orientation locking depends on browser support */ }
 	// #endif
 }
 
 function onFullscreenChange() {
 	// #ifdef H5
 	isFullscreen.value = !!document.fullscreenElement
+	if (!isFullscreen.value) { try { screen.orientation?.unlock?.() } catch { /* already unlocked */ } }
 	// #endif
 	if (isFullscreen.value) {
 		showControls.value = true
@@ -1558,7 +1700,7 @@ function onAppTimeUpdate(event) {
 		lastAppUiUpdateAt = now
 		syncAppProgressUi()
 	}
-	appPlaying.value = true
+	if (typeof detail.playing === 'boolean') appPlaying.value = detail.playing
 	if (state.settings.rememberProgress && current.value && now - lastSaveAt > 10000) {
 		lastSaveAt = now
 		recordProgress(current.value, appPlaybackPosition, appPlaybackDuration)
@@ -1570,12 +1712,13 @@ function onAppLoadedMetadata() {
 	if (!video) return
 	const resume = pendingAppSeek || getResumePosition(video)
 	if (resume > 2 && (!duration.value || resume < duration.value - 2)) {
-		if (!appContext) appContext = uni.createVideoContext('app-player', instance?.proxy)
+		if (!appContext) appContext = appPlayerRef.value
 		seekAppTo(resume)
 		showResumeHint(resume)
 	}
 	pendingAppSeek = 0
-	if (!appContext) appContext = uni.createVideoContext('app-player', instance?.proxy)
+	if (!appContext) appContext = appPlayerRef.value
+	appContext?.playbackRate(rate.value)
 	setTimeout(() => appContext?.play(), 120)
 }
 
@@ -1593,7 +1736,8 @@ function onAppEnded() {
 
 function onAppError(event) {
 	appVideoError.value = true
-	errorMessage.value = event?.detail?.errMsg || '系统播放器无法打开这个视频，可能是编码或权限问题。'
+	if (appFullscreen.value) exitAppFullscreen()
+	errorMessage.value = event?.detail?.errMsg || 'LibVLC 无法打开这个视频，请检查文件、地址或访问权限。'
 }
 
 function goBack() {
@@ -1617,7 +1761,11 @@ function queueProgress(item) {
 }
 
 function cleanup() {
+	sourceRevision++
+	hlsPlayer?.destroy(); hlsPlayer = null
 	if (isApp) {
+		appContext?.release()
+		appContext = null
 		exitAppFullscreen()
 		appAdjustments?.restoreBrightness()
 		appAdjustments = null
@@ -1635,6 +1783,8 @@ function cleanup() {
 	clearTimeout(resumeTimer)
 	clearTimeout(seekFeedbackTimer)
 	// #ifdef H5
+	videoEl?.release?.()
+	try { screen.orientation?.unlock?.() } catch { /* release the direction when leaving this player */ }
 	window.removeEventListener('keydown', onKeydown)
 	document.removeEventListener('fullscreenchange', onFullscreenChange)
 	document.removeEventListener('visibilitychange', onVisibilityChange)
@@ -1654,9 +1804,14 @@ function cleanup() {
 	}
 	// #endif
 }
+
+function focusDesktopPlayer() { videoEl?.focus?.() }
 </script>
 
 <style scoped>
+.desktop-vlc-launch { position:absolute;inset:28% 15%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#f5f7f2;cursor:pointer;z-index:2;text-align:center; }
+.desktop-vlc-action { color:#e8ff63;font-size:13px; }
+.control-orientation-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:42px;padding:3px 5px;color:#f5f7f2;font-size:9px;white-space:nowrap}
 /* ============================== shared ============================== */
 .primary-btn {
 	display: inline-flex;
@@ -2126,8 +2281,8 @@ function cleanup() {
 .app-auto-switch.is-on { color: var(--accent); border-color: rgba(232, 255, 99, 0.16); background: rgba(232, 255, 99, 0.06); }
 .app-auto-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
 .app-progress-panel { margin-top: 16px; padding: 12px 13px; border-radius: 12px; background: rgba(255, 255, 255, 0.028); border: 1px solid rgba(255, 255, 255, 0.065); }
-.app-progress-track { height: 3px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
-.app-progress-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+.app-progress-slider { margin: 0; height: 18px; }
+.app-live-status { display:flex;align-items:center;gap:7px;height:18px;color:var(--accent);font-size:11px; }
 .app-progress-row { display: flex; justify-content: space-between; margin-top: 7px; font-size: 9px; color: var(--muted); }
 .app-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 14px; }
 .app-control-btn { flex: 1; height: 54px; border-radius: 12px; background: rgba(255, 255, 255, 0.045); border: 1px solid rgba(255, 255, 255, 0.07); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 8.5px; color: #a9b0a6; }

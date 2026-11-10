@@ -1,5 +1,6 @@
 <script>
 	import { initStore, saveState } from './core/store.js'
+	import { checkForUpdates } from './core/update/client.js'
 
 	export default {
 		onLaunch() {
@@ -8,6 +9,7 @@
 			plus.screen.lockOrientation('portrait-primary')
 			// #endif
 			initStore()
+			setTimeout(() => checkForUpdates(true), 8000)
 			console.log('[LocalCinema] launch')
 		},
 		onShow() {

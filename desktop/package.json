@@ -1,55 +1,85 @@
 {
   "name": "local-video-desktop",
   "productName": "本地影库",
-  "version": "1.0.1",
+  "version": "1.1.0-alpha.5",
   "description": "本地影库 Windows 桌面播放器",
   "author": "LocalVideo",
   "private": true,
   "main": "main.cjs",
   "scripts": {
     "icons": "node generate-icons.cjs",
-    "build:web": "node build-web.cjs",
+    "build:web": "node build-tvbox-vendors.cjs && node build-web.cjs",
+    "prepare:vlc": "node --use-system-ca ../tools/prepare-vlc.cjs --windows",
     "start": "node node_modules/electron/install.js && electron .",
-    "pack": "npm run icons && npm run build:web && electron-builder --win nsis zip --x64",
-    "pack:portable": "npm run icons && npm run build:web && electron-builder --win portable --x64",
+    "pack": "npm run prepare:vlc && npm run icons && npm run build:web && electron-builder --win nsis --x64",
+    "pack:portable": "npm run prepare:vlc && npm run icons && npm run build:web && electron-builder --win portable --x64",
     "measure:startup": "node measure-startup.cjs",
-    "test": "node --test test/*.test.cjs"
+    "test": "node --test test/*.test.cjs",
+    "pack:dir": "npm run prepare:vlc && npm run build:web && electron-builder --dir --win --x64"
   },
   "devDependencies": {
     "@resvg/resvg-js": "2.6.2",
+    "core-js-pure": "3.51.0",
     "electron": "45.2.3",
-    "electron-builder": "26.18.0"
+    "electron-builder": "26.18.0",
+    "fast-xml-parser": "5.12.0",
+    "hls.js": "1.7.4",
+    "json5": "2.2.3",
+    "yauzl": "3.2.0"
   },
   "build": {
     "appId": "com.localvideo.desktop",
     "asar": true,
-    "electronLanguages": ["zh-CN", "en-US"],
+    "asarUnpack": [
+      "node_modules/koffi/**",
+      "node_modules/@koromix/koffi-win32-x64/**"
+    ],
+    "electronLanguages": [
+      "zh-CN",
+      "en-US"
+    ],
     "directories": {
       "output": "dist"
     },
     "files": [
       "main.cjs",
       "preload.cjs",
+      "vlc-player.cjs",
+      "vlc-worker.cjs",
+      "vlc-preload.cjs",
+      "vlc-controls.html",
+      "vlc-controls.css",
+      "vlc-controls.js",
       "media-library.cjs",
+      "tvbox-network.cjs",
+      "tvbox-local-files.cjs",
       "package.json",
-      "assets/icon.ico"
+      "assets/icon.ico",
+      "app-update.cjs",
+      "update-model.mjs"
     ],
     "extraResources": [
       {
+        "from": "vlc-runtime",
+        "to": "vlc-runtime",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
         "from": "web",
-        "to": "web"
+        "to": "web",
+        "filter": [
+          "**/*",
+          "!static/tvbox-native/**",
+          "!static/vlc-native/**"
+        ]
       }
     ],
     "win": {
       "target": [
         {
           "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "zip",
           "arch": [
             "x64"
           ]
@@ -72,5 +102,8 @@
       "artifactName": "LocalVideo-${version}-Windows-x64-Portable.exe"
     },
     "artifactName": "LocalVideo-${version}-Windows-x64-Green.${ext}"
+  },
+  "dependencies": {
+    "koffi": "3.3.7"
   }
 }

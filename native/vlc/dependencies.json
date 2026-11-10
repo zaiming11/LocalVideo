@@ -1,0 +1,59 @@
+{
+  "android": {
+    "version": "3.7.7",
+    "url": "https://repo.maven.apache.org/maven2/org/videolan/android/libvlc-all/3.7.7/libvlc-all-3.7.7.aar",
+    "sha256": "b48dab96e0e90e34cce3861963500c144a5aadb1b249d501d6a4b104d849e61b",
+    "abis": [
+      "arm64-v8a",
+      "armeabi-v7a"
+    ]
+  },
+  "windows": {
+    "version": "3.0.24",
+    "url": "https://download.videolan.org/pub/videolan/vlc/3.0.24/win64/vlc-3.0.24-win64.zip",
+    "sha256": "fcf30850371ad10c9373cc4f0f4501e7dee49e3e9ae9f20c72fb2661a1ca6323",
+    "arch": "x64"
+  },
+  "androidSupport": [
+    {
+      "url": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-livedata-core/2.0.0/lifecycle-livedata-core-2.0.0.aar",
+      "sha256": "fde334ec7e22744c0f5bfe7caf1a84c9d717327044400577bdf9bd921ec4f7bc",
+      "classes": "androidx.lifecycle-lifecycle-livedata-core-2.0.0-classes.jar"
+    },
+    {
+      "url": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-common/2.0.0/lifecycle-common-2.0.0.jar",
+      "sha256": "7bad7a188804adea6fa1f35d5ef99b705f20bd93ecadde484760ff86b535fefc",
+      "classes": "androidx.lifecycle-lifecycle-common-2.0.0-classes.jar"
+    },
+    {
+      "url": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-runtime/2.0.0/lifecycle-runtime-2.0.0.aar",
+      "sha256": "e4afc9e636183f6f3e0edf1cf46121a492ffd2c673075bb07f55c7a99dd43cfb",
+      "classes": "androidx.lifecycle-lifecycle-runtime-2.0.0-classes.jar"
+    },
+    {
+      "url": "https://dl.google.com/dl/android/maven2/androidx/arch/core/core-common/2.0.0/core-common-2.0.0.jar",
+      "sha256": "4b80b337779b526e64b0ee0ca9e0df43b808344d145f8e9b1c42a134dac57ad8",
+      "classes": "androidx.arch.core-core-common-2.0.0-classes.jar"
+    },
+    {
+      "url": "https://dl.google.com/dl/android/maven2/androidx/arch/core/core-runtime/2.0.0/core-runtime-2.0.0.aar",
+      "sha256": "87e65fc767c712b437649c7cee2431ebb4bed6daef82e501d4125b3ed3f65f8e",
+      "classes": "androidx.arch.core-core-runtime-2.0.0-classes.jar"
+    },
+    {
+      "url": "https://dl.google.com/dl/android/maven2/androidx/collection/collection/1.0.0/collection-1.0.0.jar",
+      "sha256": "9c8d117b5c2bc120a1cdfeb857e05b495b16c36013570372a708f7827e3ac9f9",
+      "classes": "androidx.collection-collection-1.0.0-classes.jar"
+    },
+    {
+      "url": "https://dl.google.com/dl/android/maven2/androidx/core/core/1.0.0/core-1.0.0.aar",
+      "sha256": "d7672358fc0d46de678968bcddfd3bdfe1618574299a753477b16116cfec74f5",
+      "classes": "androidx.core-core-1.0.0-classes.jar"
+    },
+    {
+      "url": "https://dl.google.com/dl/android/maven2/androidx/versionedparcelable/versionedparcelable/1.0.0/versionedparcelable-1.0.0.aar",
+      "sha256": "f6438a93ed8016ccddca0e140a70be0b0110e0424edaa1472f84f98fed2e1ce3",
+      "classes": "androidx.versionedparcelable-versionedparcelable-1.0.0-classes.jar"
+    }
+  ]
+}

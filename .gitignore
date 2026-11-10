@@ -11,3 +11,11 @@ node_modules/
 .env.*
 !.env.example
 *.log
+tools/.android-build/
+desktop/.android-runtime/
+desktop/.update-publish/
+desktop/update-model.mjs
+desktop/vlc-runtime/
+static/vlc-native/*.jar
+static/vlc-native/arm64-v8a/
+static/vlc-native/armeabi-v7a/

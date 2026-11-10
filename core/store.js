@@ -29,6 +29,7 @@ const defaultSettings = {
 export const state = reactive({
 	ready: false,
 	videos: [],
+	onlineVideos: [],
 	progress: {},
 	history: [],
 	lastPlayedId: '',
@@ -51,7 +52,14 @@ export const state = reactive({
 	scanProgress: 0
 })
 
-const videosById = computed(() => new Map(state.videos.map((video) => [video.id, video])))
+const videosById = computed(() => new Map([...state.videos, ...state.onlineVideos].map((video) => [video.id, video])))
+const historyVideosById = computed(() => new Map(state.history
+	.filter(entry => entry?.video?.id === entry.id && entry.video.source === 'tvbox' && entry.video.online && entry.video.url)
+	.map(entry => [entry.id, entry.video])))
+
+function playableHistoryEntry(entry, video) {
+	return video?.source === 'tvbox' && video.online ? { ...entry, video: { ...video } } : entry
+}
 
 let initialized = false
 let persistTimer = null
@@ -126,7 +134,8 @@ function normalizeVideo(video) {
 		preview: !!video.preview,
 		source: video.source || '',
 		contentUri: video.contentUri || '',
-		filePath: video.filePath || ''
+		filePath: video.filePath || '',
+		online: video.source === 'tvbox' ? video.online || null : null
 	}
 }
 
@@ -147,6 +156,7 @@ export function initStore() {
 			.filter((video) => video && video.url)
 			.map(normalizeVideo)
 		state.progress = sanitizeProgressMap(saved.progress || {})
+		state.onlineVideos = (Array.isArray(saved.onlineVideos) ? saved.onlineVideos : []).slice(0, 1000).filter(video => video?.source === 'tvbox' && video.online && video.url).map(normalizeVideo)
 		state.history = Array.isArray(saved.history) ? saved.history.slice(0, MAX_PROGRESS_ENTRIES) : []
 		state.lastPlayedId = saved.lastPlayedId || ''
 		state.lastTab = saved.lastTab || 'library'
@@ -174,7 +184,7 @@ export function initStore() {
 		if (video && checkpoint.baseRevision === persistenceRevision && Number(entry.duration) > 0 && Number(entry.position) >= 1) {
 			const restored = { ...state.progress[video.id], ...entry, id: video.id, title: video.title, name: video.name, folder: video.folder, thumb: video.thumb, demo: video.demo }
 			state.progress[video.id] = restored
-			state.history = [restored, ...state.history.filter((item) => item.id !== video.id)].slice(0, MAX_PROGRESS_ENTRIES)
+			state.history = [playableHistoryEntry(restored, video), ...state.history.filter((item) => item.id !== video.id)].slice(0, MAX_PROGRESS_ENTRIES)
 			state.lastPlayedId = video.id
 		}
 	} catch (error) { /* a missing or damaged checkpoint must not hide the library */ }
@@ -195,6 +205,7 @@ export function saveState(options = {}) {
 		persistenceRevision: persistenceRevision + 1,
 		libraryViewDefaultsVersion: LIBRARY_VIEW_DEFAULTS_VERSION,
 		videos: compactVideos,
+		onlineVideos: state.onlineVideos,
 		progress: state.progress,
 		history: state.history.slice(0, MAX_PROGRESS_ENTRIES),
 		lastPlayedId: state.lastPlayedId,
@@ -336,6 +347,15 @@ export function addVideos(list = [], options = {}) {
 	return incoming.length
 }
 
+export function setOnlineQueue(videos, currentId) {
+	initStore()
+	// Preserve playable metadata from older history records before replacing this queue.
+	state.history = state.history.map(entry => playableHistoryEntry(entry, getVideoById(entry.id)))
+	state.onlineVideos = videos.slice(0, 1000).map(normalizeVideo)
+	setQueue(state.onlineVideos.map(video => video.id), currentId)
+	saveState({ immediate: true })
+}
+
 export function removeVideo(id) {
 	const index = state.videos.findIndex((video) => video.id === id)
 	if (index === -1) return
@@ -348,6 +368,7 @@ export function removeVideo(id) {
 
 export function clearLibrary() {
 	state.videos = []
+	state.onlineVideos = []
 	state.progress = {}
 	state.history = []
 	state.lastPlayedId = ''
@@ -359,7 +380,19 @@ export function clearLibrary() {
 }
 
 export function getVideoById(id) {
-	return videosById.value.get(id) || null
+	return videosById.value.get(id) || historyVideosById.value.get(id) || null
+}
+
+export function setQueueForVideo(video, localVideos = []) {
+	let ids
+	if (video.source === 'tvbox') {
+		ids = state.queue.includes(video.id) && state.queue.every(id => getVideoById(id)?.source === 'tvbox')
+			? state.queue.slice() : [video.id]
+	} else {
+		ids = localVideos.map(item => item.id)
+		if (!ids.includes(video.id)) ids.unshift(video.id)
+	}
+	setQueue(ids, video.id)
 }
 
 export function setLastTab(tab) {
@@ -403,7 +436,7 @@ export function markPlayed(video) {
 		demo: !!video.demo
 	}
 	state.progress[video.id] = { ...existing, ...entry }
-	state.history = [entry, ...state.history.filter((item) => item.id !== video.id)].slice(0, MAX_PROGRESS_ENTRIES)
+	state.history = [playableHistoryEntry(entry, video), ...state.history.filter((item) => item.id !== video.id)].slice(0, MAX_PROGRESS_ENTRIES)
 	saveSoon()
 }
 
@@ -435,7 +468,7 @@ export function recordProgress(video, position, duration, options = {}) {
 	}
 	state.progress[video.id] = { ...previous, ...entry }
 	state.lastPlayedId = video.id
-	state.history = [entry, ...state.history.filter((item) => item.id !== video.id)].slice(0, MAX_PROGRESS_ENTRIES)
+	state.history = [playableHistoryEntry(entry, video), ...state.history.filter((item) => item.id !== video.id)].slice(0, MAX_PROGRESS_ENTRIES)
 	saveProgressSoon(video.id)
 }
 

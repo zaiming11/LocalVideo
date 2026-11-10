@@ -1,0 +1,32 @@
+LocalVideo uses the following separately loaded native libraries.
+
+LibVLC Android 3.7.7: Copyright VideoLAN and contributors.
+License: GNU Lesser General Public License 2.1 or later (COPYING.LIB).
+Official artifact and metadata:
+https://repo.maven.apache.org/maven2/org/videolan/android/libvlc-all/3.7.7/
+Android bindings source:
+https://code.videolan.org/videolan/libvlcjni
+VLC source and Android native build instructions:
+https://code.videolan.org/videolan/vlc
+https://code.videolan.org/videolan/vlc-android
+
+Windows LibVLC 3.0.24: Copyright VideoLAN and contributors.
+LibVLC and libvlccore are LGPL libraries. Some plugins in the official
+distribution are licensed under the GPL or other licenses. The original
+COPYING.txt, AUTHORS.txt and THANKS.txt are retained beside the libraries.
+Corresponding official source archive and binary distribution:
+https://download.videolan.org/pub/videolan/vlc/3.0.24/vlc-3.0.24.tar.xz
+https://download.videolan.org/pub/videolan/vlc/3.0.24/win64/
+
+Native libraries remain separate files and can be rebuilt from the official
+source. LocalVideo's loading/build integration is in native/vlc, tools and
+desktop/vlc-*.cjs. No changes were made to the downloaded native libraries.
+
+AndroidX Java support libraries: Copyright The Android Open Source Project.
+License: Apache License 2.0 (LICENSE-AndroidX.txt, Android distribution).
+Source: https://android.googlesource.com/platform/frameworks/support/
+Artifact URLs, versions and checksums: native/vlc/dependencies.json.
+
+Koffi 3.3.7: Copyright Niels Martignene and contributors. MIT license.
+Its license is distributed with node_modules/koffi in the Windows application.
+Source: https://github.com/Koromix/koffi

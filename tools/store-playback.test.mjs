@@ -6,6 +6,7 @@ import { test } from 'node:test'
 import * as utils from '../core/utils.js'
 import * as demo from '../core/demo.js'
 import * as naturalSort from '../core/natural-sort.js'
+import { resolveEpisode } from '../core/tvbox/engine.mjs'
 
 const hxRequire = createRequire(path.join(process.env.UNI_HBUILDERX_PLUGINS || 'E:/HBuilderX/plugins', 'uniapp-cli-vite/package.json'))
 const vue = hxRequire('vue')
@@ -15,6 +16,19 @@ const code = esbuild.transformSync(source, { format: 'cjs', target: 'es2020' }).
 const libraryKey = 'local_video_state_v1'
 const checkpointKey = 'local_video_playback_checkpoint_v1'
 const copy = (value) => value === undefined ? undefined : JSON.parse(JSON.stringify(value))
+
+// Exercise the actual recent-list lookup and click handlers with the real store.
+const home = fs.readFileSync(new URL('../pages/home/home.vue', import.meta.url), 'utf8')
+function recentPage(store) {
+	const navigations = [], notices = [], showAddSheet = { value: false }
+	const source = home.slice(home.indexOf('const recentEntries = computed('), home.indexOf('\nconst featured = computed('))
+		+ home.slice(home.indexOf('function openVideo('), home.indexOf('\nfunction openFeatured('))
+		+ home.slice(home.indexOf('function resumeEntry('), home.indexOf('\nasync function handlePrimaryImport('))
+	const result = new Function('computed','state','getVideoById','paletteFor','relativeTime','filteredVideos','sortedVideos','setQueueForVideo','setCurrent','uni','showAddSheet','showToast','openAddSheet', source + '\nreturn { recentEntries, resumeEntry }')(
+		vue.computed, store.state, store.getVideoById, utils.paletteFor, () => '', { value: store.state.videos }, { value: store.state.videos }, store.setQueueForVideo, store.setCurrent,
+		{ navigateTo: value => navigations.push(value) }, showAddSheet, message => notices.push(message), () => { showAddSheet.value = true })
+	return { ...result, navigations, notices, showAddSheet }
+}
 
 function fixture(t) {
 	t.mock.timers.enable({ apis: ['setTimeout'] })
@@ -58,6 +72,60 @@ test('periodic progress writes a bounded checkpoint and restores it after a cold
 	assert.equal(restarted.getResumePosition(restarted.getVideoById('v0')), 31.5)
 	assert.equal(restarted.state.history[0].name, '第1集.mp4')
 	assert.equal(restarted.state.lastPlayedId, 'v0')
+})
+
+test('online queue persists separately without replacing local files and retains episode resolution data', (t) => {
+	const { store, load } = fixture(t)
+	const video = { id: 'tvbox-one', name: '在线第一集', url: 'https://example.com/raw', source: 'tvbox', online: { url: 'opaque-id', flag: 'default', site: { type: 4, api: 'https://example.com/api', supported: true }, config: { url: 'https://example.com/config' } } }
+	store.setOnlineQueue([video], video.id)
+	assert.equal(store.state.videos.length, 236)
+	assert.equal(store.getVideoById(video.id).online.url, 'opaque-id')
+	const restored = load()
+	assert.deepEqual([...restored.state.queue], [video.id])
+	assert.equal(restored.getVideoById(video.id).online.site.type, 4)
+	assert.equal(restored.state.videos.length, 236)
+})
+
+test('TVBox recent entries remain playable after another title replaces the queue and after restart', async t => {
+	const { store, load } = fixture(t)
+	const video = { id:'tvbox_history', name:'历史影片', url:'opaque-episode', source:'tvbox', online: {
+		url:'opaque-episode',flag:'line',site:{ key:'csp_Test',type:3,jar:'http://127.0.0.1:123/local/test.jar',ext:'http://127.0.0.1:123/local/rule.json',headers:{Referer:'https://example.com'} },
+		config:{url:'http://127.0.0.1:123/local/main.json',flags:['line']},localRoot:{id:'folder',baseUrl:'http://127.0.0.1:123/local/',entry:'main.json'} } }
+	store.setOnlineQueue([video],video.id);store.markPlayed(store.getVideoById(video.id));store.recordProgress(store.getVideoById(video.id),31,120)
+	store.setOnlineQueue([{...video,id:'tvbox_another',name:'另一部影片'}],'tvbox_another')
+	const restarted=load(), page=recentPage(restarted), entry=page.recentEntries.value.find(item=>item.id===video.id)
+	assert(entry.video);assert.deepEqual(copy(entry.video.online),video.online)
+	page.resumeEntry(entry)
+	assert.deepEqual([...restarted.state.queue],[video.id]);assert.equal(restarted.state.currentId,video.id)
+	assert.equal(restarted.getResumePosition(entry.video),31);assert.equal(restarted.state.videos.length,236)
+	assert.deepEqual(page.navigations,[{url:'/pages/player/player?id=tvbox_history'}]);assert.equal(page.showAddSheet.value,false)
+	const calls=[]
+	const resolved=await resolveEpisode(restarted.getVideoById(video.id).online,async()=>{throw Error('Unexpected HTTP API')},async(site,action,args)=>{
+		calls.push({site,action,args});return {body:{url:'https://example.com/fresh.mp4',parse:0}}
+	})
+	assert.equal(resolved.url,'https://example.com/fresh.mp4');assert.equal(calls[0].action,'play');assert.equal(calls[0].args.url,'opaque-episode')
+	assert.equal(calls[0].site.ext,video.online.site.ext);assert.deepEqual(page.notices,[])
+})
+
+test('recent TVBox resumes the active episode queue and upgrades legacy records before queue replacement', t => {
+	const {store,load}=fixture(t)
+	const videos=[1,2].map(n=>({id:'tvbox_'+n,name:'第'+n+'集',url:'https://example.com/'+n+'.mp4',source:'tvbox',online:{url:'https://example.com/'+n+'.mp4',site:null,config:{url:'https://example.com/config'}}}))
+	store.setOnlineQueue(videos,videos[0].id)
+	store.state.history=[{id:videos[0].id,title:videos[0].name,position:12,duration:120}]
+	const page=recentPage(store);page.resumeEntry(page.recentEntries.value[0])
+	assert.deepEqual([...store.state.queue],videos.map(v=>v.id));assert.equal(page.navigations.length,1)
+	store.setOnlineQueue([{...videos[0],id:'tvbox_new'}],'tvbox_new')
+	assert.equal(load().getVideoById(videos[0].id).online.url,videos[0].url)
+	store.setQueueForVideo(store.getVideoById('v1'),store.state.videos)
+	assert.equal(store.state.queue.length,236);assert(!store.state.queue.some(id=>id.startsWith('tvbox_')))
+})
+
+test('unrecoverable old TVBox history shows a TVBox-specific message instead of opening local import', t => {
+	const {store}=fixture(t)
+	store.state.history=[{id:'tvbox_old',title:'旧影片',position:12,duration:120}]
+	const page=recentPage(store);page.resumeEntry(page.recentEntries.value[0])
+	assert.equal(page.navigations.length,0);assert.equal(page.showAddSheet.value,false)
+	assert.match(page.notices[0],/从 TVBox 重新打开/)
 })
 
 test('a full save includes current progress and stale checkpoints cannot undo clearing history', (t) => {

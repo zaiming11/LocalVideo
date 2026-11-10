@@ -11,6 +11,10 @@
 			}
 		},
 		{
+			"path": "pages/tvbox/tvbox",
+			"style": { "navigationStyle": "custom", "backgroundColor": "#090d0e" }
+		},
+		{
 			"path": "pages/player/player",
 			"style": {
 				"navigationStyle": "custom",
