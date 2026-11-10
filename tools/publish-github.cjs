@@ -74,6 +74,9 @@ async function main() {
   packages.push({ file: checksumFile, name: 'SHA256SUMS.txt', size: fs.statSync(checksumFile).size, digest: 'sha256:' + await sha256(checksumFile) })
   console.log('Verified release ' + tag + ': ' + packages.map(p => p.name).join(', '))
   if (!args.includes('--publish')) { console.log('Dry run only. Add --publish to upload and publish this release.'); return }
+  const targetRef = option('--target', 'main')
+  const targetResult = spawnSync('git', ['rev-parse', '--verify', targetRef + '^{commit}'], { cwd: root, encoding: 'utf8', windowsHide: true })
+  const targetCommitish = targetResult.status === 0 ? targetResult.stdout.trim() : targetRef
   const token = credential(), api = (url, options = {}) => request(url, { token, ...options })
   // Paginate so a retry can find its draft even after many published releases.
   let release
@@ -86,7 +89,7 @@ async function main() {
   if (!release) {
     const notesFile = option('--notes-file')
     const body = notesFile ? fs.readFileSync(path.resolve(notesFile), 'utf8') : '应用更新：' + packages.filter(p => p.name !== 'version.json').map(p => p.name).join('、')
-    release = await api(apiBase + '/releases', { method: 'POST', json: { tag_name: tag, target_commitish: option('--target', 'main'), name: '本地影库 ' + tag, body, draft: true, prerelease: false } })
+    release = await api(apiBase + '/releases', { method: 'POST', json: { tag_name: tag, target_commitish: targetCommitish, name: '本地影库 ' + tag, body, draft: true, prerelease: false } })
   }
   for (const asset of packages) {
     const assets = await api(apiBase + '/releases/' + release.id + '/assets?per_page=100')
@@ -98,7 +101,7 @@ async function main() {
     if (uploaded.state !== 'uploaded' || uploaded.size !== asset.size || uploaded.digest !== asset.digest) throw new Error('Uploaded asset failed integrity verification: ' + asset.name)
   }
   if (args.includes('--draft')) { console.log('Draft uploads verified: ' + release.html_url); return }
-  const published = await api(apiBase + '/releases/' + release.id, { method: 'PATCH', json: { draft: false, make_latest: 'true', target_commitish: option('--target', 'main') } })
+  const published = await api(apiBase + '/releases/' + release.id, { method: 'PATCH', json: { draft: false, make_latest: 'true', target_commitish: targetCommitish } })
   console.log('Published ' + published.html_url)
 }
 main().catch(error => { console.error(error.message); process.exitCode = 1 })
