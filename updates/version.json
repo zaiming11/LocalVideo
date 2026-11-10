@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "publishedAt": "2026-11-10T08:56:22.530Z",
+  "platforms": {
+    "windows": {
+      "version": "1.1.0-alpha.5",
+      "file": "LocalVideo-1.1.0-alpha.5-Windows-x64-Setup.exe",
+      "size": 162895738,
+      "sha256": "a8822ac4895d2389b43d91810d72612aba5b5f64d693b182983a25ef62603abe",
+      "downloadUrl": "https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.5-android-1.0.5/LocalVideo-1.1.0-alpha.5-Windows-x64-Setup.exe",
+      "notes": "Windows 应用更新，请查看 GitHub Release 的更新说明。"
+    },
+    "android": {
+      "version": "1.0.5",
+      "file": "LocalVideo-1.0.5-Android.apk",
+      "size": 46180289,
+      "sha256": "216581bda660eca7a07afa3d00cda8a680b3e22b053c392e1ec39fd83a979a91",
+      "versionCode": 105,
+      "downloadUrl": "https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.5-android-1.0.5/LocalVideo-1.0.5-Android.apk",
+      "notes": "Android 应用更新，请查看 GitHub Release 的更新说明。"
+    }
+  }
+}

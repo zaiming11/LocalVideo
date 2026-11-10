@@ -98,7 +98,7 @@ async function main() {
     if (uploaded.state !== 'uploaded' || uploaded.size !== asset.size || uploaded.digest !== asset.digest) throw new Error('Uploaded asset failed integrity verification: ' + asset.name)
   }
   if (args.includes('--draft')) { console.log('Draft uploads verified: ' + release.html_url); return }
-  const published = await api(apiBase + '/releases/' + release.id, { method: 'PATCH', json: { draft: false, make_latest: 'true' } })
+  const published = await api(apiBase + '/releases/' + release.id, { method: 'PATCH', json: { draft: false, make_latest: 'true', target_commitish: option('--target', 'main') } })
   console.log('Published ' + published.html_url)
 }
 main().catch(error => { console.error(error.message); process.exitCode = 1 })
