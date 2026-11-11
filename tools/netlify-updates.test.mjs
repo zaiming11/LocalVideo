@@ -35,22 +35,3 @@ test('Netlify staging retains package identities, produces reassemblable Windows
   await assert.rejects(prepareNetlifyUpdates({ manifest, directory, output, publishDir }), /校验失败/)
   assert.equal(fs.readFileSync(path.join(publishDir, 'updates/version.json'), 'utf8'), published)
 })
-
-test('Netlify redeploy keeps the previous manifest assets available for downloads already in progress', async t => {
-  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'localvideo-netlify-retain-'))
-  t.after(() => fs.rmSync(work, { recursive: true, force: true }))
-  const directory = path.join(work, 'source'), output = path.join(work, 'stage'), publishDir = path.join(work, 'public'), manifest = path.join(work, 'version.json')
-  fs.mkdirSync(directory)
-  const bytes = Buffer.from('signed-apk-fixture')
-  const prepare = async version => {
-    const file = `LocalVideo-${version}-Android.apk`
-    fs.writeFileSync(path.join(directory, file), bytes)
-    fs.writeFileSync(manifest, JSON.stringify({ schemaVersion: 1, platforms: { android: { version, versionCode: version === '1.0.0' ? 100 : 101, file, size: bytes.length, sha256: crypto.createHash('sha256').update(bytes).digest('hex') } } }))
-    return prepareNetlifyUpdates({ manifest, directory, output, publishDir })
-  }
-  await prepare('1.0.0')
-  fs.rmSync(publishDir, { recursive: true, force: true })
-  await prepare('1.0.1')
-  for (const version of ['1.0.0', '1.0.1']) assert.deepEqual(fs.readFileSync(path.join(publishDir, 'updates', `LocalVideo-${version}-Android.apk`)), bytes)
-  assert.equal(JSON.parse(fs.readFileSync(path.join(publishDir, 'updates/version.json'))).platforms.android.version, '1.0.1')
-})

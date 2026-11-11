@@ -12,19 +12,6 @@ async function prepareNetlifyUpdates(options = {}) {
   const { readRelease, NETLIFY_UPDATE_ROOT } = await import(pathToFileURL(path.join(root, 'core/update/model.mjs')).href)
   const original = JSON.parse(fs.readFileSync(manifestFile, 'utf8'))
   const manifest = { ...original, platforms: {} }, files = []
-  const previousFile = path.join(output, 'version.json'), retained = []
-  if (fs.existsSync(previousFile)) {
-    const previous = JSON.parse(fs.readFileSync(previousFile, 'utf8'))
-    for (const platform of ['windows', 'android']) {
-      const release = readRelease(previous, platform, '0.0.0')
-      if (!release) continue
-      for (const asset of release.chunks || [release]) {
-        const file = path.join(output, asset.file)
-        if (!fs.existsSync(file) || fs.statSync(file).size !== asset.size || await digest(file) !== asset.sha256) throw new Error('上一批 Netlify 安装包缓存校验失败：' + asset.file)
-        retained.push(asset.file)
-      }
-    }
-  }
   for (const platform of ['windows', 'android']) {
     const release = readRelease(original, platform, '0.0.0')
     if (!release) continue
@@ -66,7 +53,7 @@ async function prepareNetlifyUpdates(options = {}) {
   if (options.publishDir) {
     const target = path.resolve(options.publishDir, 'updates')
     fs.mkdirSync(target, { recursive: true })
-    for (const name of new Set([...retained, ...files, 'version.json'])) fs.copyFileSync(path.join(output, name), path.join(target, name))
+    for (const name of [...files, 'version.json']) fs.copyFileSync(path.join(output, name), path.join(target, name))
   }
   return { manifest, files, output }
 }
