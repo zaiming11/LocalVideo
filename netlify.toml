@@ -1,0 +1,30 @@
+[build]
+  publish = "unpackage/dist/netlify"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+[[headers]]
+  for = "/updates/version.json"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    Netlify-CDN-Cache-Control = "no-store"
+    Access-Control-Allow-Origin = "*"
+
+[[redirects]]
+  from = "/__tvbox/*"
+  to = "/.netlify/functions/tvbox/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "same-origin"

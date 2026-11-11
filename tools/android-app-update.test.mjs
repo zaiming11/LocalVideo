@@ -9,7 +9,7 @@ const root = fileURLToPath(new URL('../', import.meta.url))
 const sdk = path.join(root, 'tools/.android-build/android35.jar'), gson = path.join(root, 'tools/.android-build/gson.jar')
 const javaBin = process.env.JAVA_HOME ? path.join(process.env.JAVA_HOME, 'bin') : 'C:/Program Files/Common Files/Oracle/Java/javapath'
 
-test('Android updater uses public GitHub defaults, saves preferences without credentials and pins APK downloads', { skip: !fs.existsSync(sdk) || !fs.existsSync(gson) || !fs.existsSync(path.join(javaBin, 'javac.exe')) }, t => {
+test('Android updater migrates to Netlify, retains GitHub selection and pins both APK download channels', { skip: !fs.existsSync(sdk) || !fs.existsSync(gson) || !fs.existsSync(path.join(javaBin, 'javac.exe')) }, t => {
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'localvideo-android-update-'))
   t.after(() => fs.rmSync(work, { recursive: true, force: true }))
   const sources = {
@@ -34,7 +34,8 @@ test('Android updater uses public GitHub defaults, saves preferences without cre
     }`,
     'UpdateCheck.java': `import android.content.*; import io.localvideo.update.UpdateAgent; import org.json.JSONObject; import java.util.*; import java.lang.reflect.*;
     public class UpdateCheck {
-      static final String URL="https://github.com/zaiming11/LocalVideo/releases/latest/download/version.json";
+      static final String URL="https://localcinema-zaiming11.netlify.app/updates/version.json";
+      static final String GITHUB="https://github.com/zaiming11/LocalVideo/releases/latest/download/version.json";
       static void check(boolean ok,String message){if(!ok)throw new AssertionError(message);}
       public static void main(String[] args) throws Exception {
         Map<String,String> values=new HashMap<>();
@@ -46,17 +47,29 @@ test('Android updater uses public GitHub defaults, saves preferences without cre
         });
         Context context=new Context(){public SharedPreferences getSharedPreferences(String name,int mode){return preferences;}};
         UpdateAgent agent=new UpdateAgent();agent.configure(context);
-        JSONObject first=new JSONObject(agent.getConfig());check(URL.equals(first.getString("manifestUrl")),"Wrong GitHub default");check(first.optBoolean("configured",false)&&first.optBoolean("autoCheck",false),"First launch requires setup");
+        JSONObject first=new JSONObject(agent.getConfig());check(URL.equals(first.getString("manifestUrl")),"Wrong Netlify default");check(first.optBoolean("configured",false)&&first.optBoolean("autoCheck",false),"First launch requires setup");
         agent.saveConfig(new JSONObject().put("manifestUrl","https://other.example/version.json").put("username","fixture").put("password","secret").put("autoCheck",false).toString());
         UpdateAgent restarted=new UpdateAgent();restarted.configure(context);JSONObject saved=new JSONObject(restarted.getConfig());
-        check(!saved.optBoolean("autoCheck",true)&&URL.equals(saved.getString("manifestUrl")),"Preference not remembered");check(!values.get("githubSource").contains("secret")&&!saved.has("password"),"Saved credentials");
+        check(!saved.optBoolean("autoCheck",true)&&URL.equals(saved.getString("manifestUrl")),"Preference not remembered");check(!values.get("updateSource").contains("secret")&&!saved.has("password"),"Saved credentials");
+        agent.saveConfig(new JSONObject().put("source","github").toString());
+        check(GITHUB.equals(new JSONObject(restarted.getConfig()).getString("manifestUrl")),"GitHub selection lost");
+        values.remove("updateSource");values.put("githubSource",new JSONObject().put("autoCheck",false).toString());
+        JSONObject migrated=new JSONObject(restarted.getConfig());check(URL.equals(migrated.getString("manifestUrl"))&&!migrated.optBoolean("autoCheck",true)&&!values.containsKey("githubSource"),"Legacy channel migration failed");
         values.put("source","obsolete encrypted fixture");restarted.getConfig();check(!values.containsKey("source"),"Legacy credential not removed");
         Method target=UpdateAgent.class.getDeclaredMethod("downloadUrl",JSONObject.class,String.class);target.setAccessible(true);
         String file="LocalVideo-1.0.5-Android.apk", pinned="https://github.com/zaiming11/LocalVideo/releases/download/v1.0.5/"+file;
         check(pinned.equals(target.invoke(null,new JSONObject().put("downloadUrl",pinned),file).toString()),"Pinned URL changed");
+        String netlify="https://localcinema-zaiming11.netlify.app/updates/"+file;
+        check(netlify.equals(target.invoke(null,new JSONObject().put("downloadUrl",netlify),file).toString()),"Netlify APK rejected");
         for(String invalid:new String[]{pinned.replace("https:","http:"),pinned.replace("github.com","evil.example"),pinned.replace("/LocalVideo/","/Other/"),pinned+"?secret=1",pinned.replace(file,"other.apk")}){
           try{target.invoke(null,new JSONObject().put("downloadUrl",invalid),file);throw new AssertionError("Accepted invalid URL");}catch(InvocationTargetException expected){check(expected.getCause() instanceof java.io.IOException,"Wrong rejection");}
         }
+        for(String invalid:new String[]{netlify.replace("https:","http:"),netlify.replace("localcinema-zaiming11","other"),netlify.replace("/updates/","/other/"),netlify+"?token=secret",netlify+"#fragment",netlify.replace(file,"other.apk")}){
+          try{target.invoke(null,new JSONObject().put("downloadUrl",invalid),file);throw new AssertionError("Accepted invalid Netlify URL");}catch(InvocationTargetException expected){check(expected.getCause() instanceof java.io.IOException,"Wrong Netlify rejection");}
+        }
+        Method routes=UpdateAgent.class.getDeclaredMethod("updateSources",java.net.URL.class,JSONObject.class);routes.setAccessible(true);
+        check(((List)routes.invoke(null,new java.net.URL(URL),new JSONObject())).size()==1,"Netlify sent through GitHub mirror");
+        check(((List)routes.invoke(null,new java.net.URL(GITHUB),new JSONObject())).size()==2,"GitHub mirror fallback removed");
         System.out.println("Android GitHub update checks passed");
       }
     }`

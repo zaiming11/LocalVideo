@@ -9,19 +9,19 @@ const { AppUpdate, normalizeConfig, DEFAULT_URL } = require('../app-update.cjs')
 const secure = { isEncryptionAvailable: () => true, encryptString: value => Buffer.from(value), decryptString: value => value.toString() }
 function setup(t, corrupt = false) {
   const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'localvideo-update-')); t.after(() => fs.rmSync(userData, { recursive: true, force: true }))
-  const bytes = Buffer.from('installer fixture'), release = { version: '1.2.0', file: 'app-1.2.0.exe', downloadUrl: 'https://github.com/zaiming11/LocalVideo/releases/download/v1.2.0/app-1.2.0.exe', size: bytes.length, sha256: crypto.createHash('sha256').update(bytes).digest('hex') }
+  const bytes = Buffer.from('installer fixture'), release = { version: '1.2.0', file: 'app-1.2.0.exe', downloadUrl: 'https://localcinema-zaiming11.netlify.app/updates/app-1.2.0.exe', size: bytes.length, sha256: crypto.createHash('sha256').update(bytes).digest('hex') }
   const manifest = { schemaVersion: 1, platforms: { windows: release } }, opened = [], requests = []
   const updater = new AppUpdate({ userData, version: '1.1.0', secureStorage: secure, openInstaller: async file => { opened.push(file); return '' }, request: async (url, config) => { requests.push({ url, config }); return Readable.from([url.endsWith('version.json') ? Buffer.from(JSON.stringify(manifest)) : corrupt ? Buffer.alloc(bytes.length, 0) : bytes]) } })
   return { updater, release, opened, bytes, userData, requests }
 }
-test('fresh installs check GitHub without setup and download from a pinned release', async t => {
+test('fresh installs check Netlify without setup and download from the Netlify update directory', async t => {
   const { updater, requests, release } = setup(t)
   assert.equal(updater.publicConfig().configured, true)
   assert.equal(updater.publicConfig().autoCheck, true)
   assert.equal((await updater.check()).release.available, true)
   await updater.download()
-  assert.equal(requests[0].url, 'https://gh-proxy.com/' + DEFAULT_URL)
-  assert.equal(requests[1].url, 'https://gh-proxy.com/' + release.downloadUrl)
+  assert.equal(requests[0].url, DEFAULT_URL)
+  assert.equal(requests[1].url, release.downloadUrl)
   assert.equal(requests[1].config.password, undefined)
 })
 
@@ -34,18 +34,18 @@ test('only a checked and fully verified package can launch an installer; post-do
   fs.writeFileSync(file, bytes); await updater.install(); assert.deepEqual(opened, [file])
 })
 
-test('legacy settings migrate to GitHub, preserve auto-check and discard credentials', t => {
+test('legacy settings migrate to Netlify, preserve auto-check and discard credentials', t => {
   const { updater, userData } = setup(t)
   const legacy = path.join(userData, 'update-source.encrypted')
   fs.writeFileSync(legacy, JSON.stringify({ manifestUrl: 'https://dav.jianguoyun.com/dav/old/version.json', username: 'fixture', password: 'fixture-only', autoCheck: false }))
-  assert.deepEqual(updater.publicConfig(), { manifestUrl: DEFAULT_URL, autoCheck: false, downloadMode: 'auto', mirrorUrl: '', configured: true, currentVersion: '1.1.0' })
+  assert.deepEqual(updater.publicConfig(), { source: 'netlify', manifestUrl: DEFAULT_URL, autoCheck: false, downloadMode: 'auto', mirrorUrl: '', configured: true, currentVersion: '1.1.0' })
   assert.equal(fs.existsSync(legacy), false)
   assert.equal(fs.readFileSync(updater.configFile, 'utf8').includes('fixture'), false)
   const restarted = new AppUpdate({ userData, version: '1.1.0', openInstaller: async () => '' })
   assert.equal(restarted.publicConfig().autoCheck, false)
-  assert.deepEqual(normalizeConfig({ manifestUrl: 'https://other.example/version.json', username: 'a', password: 'b' }), { manifestUrl: DEFAULT_URL, autoCheck: true, downloadMode: 'auto', mirrorUrl: '' })
+  assert.deepEqual(normalizeConfig({ manifestUrl: 'https://other.example/version.json', username: 'a', password: 'b' }), { source: 'netlify', manifestUrl: DEFAULT_URL, autoCheck: true, downloadMode: 'auto', mirrorUrl: '' })
   restarted.saveConfig({ autoCheck: true, password: 'ignored' })
-  assert.deepEqual(restarted.loadConfig(), { manifestUrl: DEFAULT_URL, autoCheck: true, downloadMode: 'auto', mirrorUrl: '' })
+  assert.deepEqual(restarted.loadConfig(), { source: 'netlify', manifestUrl: DEFAULT_URL, autoCheck: true, downloadMode: 'auto', mirrorUrl: '' })
 })
 
 test('corrupt packages never become installable or leave a completed cached package', async t => {
@@ -91,6 +91,9 @@ test('same or newer installed versions do not offer old GitHub installers', asyn
 
 test('bad mirror manifests and corrupt mirror installers fall back to verified GitHub originals', async t => {
   const { updater, release, bytes } = setup(t)
+  updater.saveConfig({ source: 'github' })
+  release.downloadUrl = 'https://github.com/zaiming11/LocalVideo/releases/download/v1.2.0/' + release.file
+  const github = updater.publicConfig().manifestUrl
   const requests = []
   updater.request = async url => {
     requests.push(url)
@@ -98,17 +101,19 @@ test('bad mirror manifests and corrupt mirror installers fall back to verified G
     return Readable.from([url.endsWith('version.json') ? Buffer.from(mirror ? '<html>blocked</html>' : JSON.stringify({ schemaVersion: 1, platforms: { windows: release } })) : mirror ? Buffer.alloc(bytes.length, 0) : bytes])
   }
   await updater.check(); await updater.download()
-  assert.deepEqual(requests, ['https://gh-proxy.com/' + DEFAULT_URL, DEFAULT_URL, 'https://gh-proxy.com/' + release.downloadUrl, release.downloadUrl])
+  assert.deepEqual(requests, ['https://gh-proxy.com/' + github, github, 'https://gh-proxy.com/' + release.downloadUrl, release.downloadUrl])
   assert.equal(updater.downloaded.release.version, release.version)
 })
 
 test('custom mirrors are saved and direct mode does not contact any mirror', async t => {
   const { updater, requests, release } = setup(t)
-  updater.saveConfig({ downloadMode: 'custom', mirrorUrl: 'https://mirror.example/proxy' })
+  release.downloadUrl = 'https://github.com/zaiming11/LocalVideo/releases/download/v1.2.0/' + release.file
+  updater.saveConfig({ source: 'github', downloadMode: 'custom', mirrorUrl: 'https://mirror.example/proxy' })
+  const github = updater.publicConfig().manifestUrl
   await updater.check(); await updater.download()
-  assert.equal(requests[0].url, 'https://mirror.example/proxy/' + DEFAULT_URL)
-  requests.length = 0; updater.saveConfig({ downloadMode: 'direct' })
+  assert.equal(requests[0].url, 'https://mirror.example/proxy/' + github)
+  requests.length = 0; updater.saveConfig({ source: 'github', downloadMode: 'direct' })
   await updater.check(); await updater.download()
-  assert.deepEqual(requests.map(r => r.url), [DEFAULT_URL, release.downloadUrl])
+  assert.deepEqual(requests.map(r => r.url), [github, release.downloadUrl])
   assert.throws(() => updater.saveConfig({ downloadMode: 'custom', mirrorUrl: 'http://mirror.example' }), /HTTPS/)
 })

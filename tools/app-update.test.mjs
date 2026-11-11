@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { compareVersions, readRelease, githubDownloadUrl, updateSources, updateNetworkConfig, DEFAULT_UPDATE_URL } from '../core/update/model.mjs'
+import { compareVersions, readRelease, githubDownloadUrl, updateDownloadUrl, updateSources, updateSourceConfig, updateNetworkConfig, DEFAULT_UPDATE_URL, GITHUB_UPDATE_URL, NETLIFY_UPDATE_ROOT } from '../core/update/model.mjs'
 
 test('update versions compare numeric segments and prereleases correctly', () => {
   assert(compareVersions('1.10.0', '1.2.0') > 0)
@@ -32,10 +32,20 @@ test('GitHub downloads stay pinned to this repository and reject wrong hosts, re
 })
 
 test('update routing supports automatic, direct and custom HTTPS mirrors without changing canonical asset URLs', () => {
-  assert.deepEqual(updateSources(DEFAULT_UPDATE_URL), ['https://gh-proxy.com/' + DEFAULT_UPDATE_URL, DEFAULT_UPDATE_URL])
+  assert.deepEqual(updateSources(DEFAULT_UPDATE_URL), [DEFAULT_UPDATE_URL])
+  assert.equal(updateSourceConfig().source, 'netlify')
+  assert.equal(updateSourceConfig({ source: 'github' }).manifestUrl, GITHUB_UPDATE_URL)
+  assert.deepEqual(updateSources(GITHUB_UPDATE_URL), ['https://gh-proxy.com/' + GITHUB_UPDATE_URL, GITHUB_UPDATE_URL])
   assert.deepEqual(updateSources(DEFAULT_UPDATE_URL, { downloadMode: 'direct' }), [DEFAULT_UPDATE_URL])
-  assert.deepEqual(updateSources(DEFAULT_UPDATE_URL, { downloadMode: 'custom', mirrorUrl: 'https://mirror.example/gh' }), ['https://mirror.example/gh/' + DEFAULT_UPDATE_URL, DEFAULT_UPDATE_URL])
+  assert.deepEqual(updateSources(GITHUB_UPDATE_URL, { downloadMode: 'custom', mirrorUrl: 'https://mirror.example/gh' }), ['https://mirror.example/gh/' + GITHUB_UPDATE_URL, GITHUB_UPDATE_URL])
   for (const mirrorUrl of ['', 'http://mirror.example/', 'https://user:pass@mirror.example/', 'https://mirror.example/?token=a', 'https://mirror.example/#hash']) assert.throws(() => updateNetworkConfig({ downloadMode: 'custom', mirrorUrl }))
+})
+
+test('Netlify downloads are confined to the deployed update directory and exact package name', () => {
+  const file = 'LocalVideo-1.2.0-Setup.exe', target = NETLIFY_UPDATE_ROOT + file
+  assert.equal(updateDownloadUrl(target, file), target)
+  for (const invalid of [target.replace('https:', 'http:'), target.replace('/updates/', '/other/'), target.replace('localcinema-zaiming11', 'other'), target + '?token=secret', target + '#hash', target.replace(file, 'other.exe'), target.replace('https://', 'https://user:pass@')]) assert.throws(() => updateDownloadUrl(invalid, file))
+  assert.throws(() => updateSources(NETLIFY_UPDATE_ROOT + '../other.exe'))
 })
 
 test('Android release validation works in a runtime without a global URL constructor', () => {
@@ -52,6 +62,11 @@ test('Android release validation works in a runtime without a global URL constru
     const release = readRelease(manifest, 'android', '1.0.5', UniversalURL);
     assert.equal(release.available, true); assert.equal(release.downloadUrl, downloadUrl);
     manifest.platforms.android.downloadUrl = downloadUrl.replace('github.com', 'evil.example');
+    assert.throws(() => readRelease(manifest, 'android', '1.0.5', UniversalURL));
+    const netlify = 'https://localcinema-zaiming11.netlify.app/updates/' + file;
+    manifest.platforms.android.downloadUrl = netlify;
+    assert.equal(readRelease(manifest, 'android', '1.0.5', UniversalURL).downloadUrl, netlify);
+    manifest.platforms.android.downloadUrl = netlify + '?token=secret';
     assert.throws(() => readRelease(manifest, 'android', '1.0.5', UniversalURL));
   `
   const result = spawnSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8', timeout: 10000, windowsHide: true })

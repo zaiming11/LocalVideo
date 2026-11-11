@@ -16,7 +16,7 @@ import javax.crypto.*;
 import javax.crypto.spec.GCMParameterSpec;
 import org.json.JSONObject;
 
-/** Public GitHub Release updates with verified background downloads. */
+/** Public Netlify and GitHub updates with verified background downloads. */
 public class UpdateAgent {
     private Context context;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -25,7 +25,8 @@ public class UpdateAgent {
     private File downloaded;
     private JSONObject downloadedRelease;
     private static final String ALIAS = "localvideo_update_source_v1";
-    private static final String DEFAULT_URL = "https://github.com/zaiming11/LocalVideo/releases/latest/download/version.json";
+    private static final String DEFAULT_URL = "https://localcinema-zaiming11.netlify.app/updates/version.json";
+    private static final String GITHUB_URL = "https://github.com/zaiming11/LocalVideo/releases/latest/download/version.json";
     public void configure(Context activity) { context = activity.getApplicationContext(); }
     private javax.crypto.SecretKey key() throws Exception {
         KeyStore store = KeyStore.getInstance("AndroidKeyStore"); store.load(null);
@@ -45,12 +46,12 @@ public class UpdateAgent {
     }
     private JSONObject config() throws Exception {
         android.content.SharedPreferences preferences = context.getSharedPreferences(ALIAS, 0);
-        String value = preferences.getString("githubSource", "");
+        String value = preferences.getString("updateSource", preferences.getString("githubSource", ""));
         JSONObject saved = new JSONObject();
         if (!value.isEmpty()) { try { saved = new JSONObject(value); } catch (Exception ignored) {} }
         else { try { JSONObject old = legacyConfig(); if (old != null) saved = old; } catch (Exception ignored) {} }
         JSONObject current = normalizeConfig(saved);
-        if (value.isEmpty() || preferences.contains("source")) preferences.edit().putString("githubSource", current.toString()).remove("source").apply();
+        if (preferences.getString("updateSource", "").isEmpty() || preferences.contains("source") || preferences.contains("githubSource")) preferences.edit().putString("updateSource", current.toString()).remove("githubSource").remove("source").apply();
         return current;
     }
     public String getConfig() throws Exception {
@@ -63,7 +64,7 @@ public class UpdateAgent {
     public String saveConfig(String json) throws Exception {
         JSONObject input = new JSONObject(json);
         JSONObject next = normalizeConfig(input);
-        context.getSharedPreferences(ALIAS, 0).edit().putString("githubSource", next.toString()).remove("source").apply(); downloaded = null; downloadedRelease = null;
+        context.getSharedPreferences(ALIAS, 0).edit().putString("updateSource", next.toString()).remove("githubSource").remove("source").apply(); downloaded = null; downloadedRelease = null;
         return getConfig();
     }
     private static JSONObject normalizeConfig(JSONObject input) throws Exception {
@@ -75,10 +76,13 @@ public class UpdateAgent {
             mirror = url.toString().replaceAll("/+$", "") + "/";
         }
         if ("custom".equals(mode) && mirror.isEmpty()) throw new IOException("请填写镜像地址");
-        return new JSONObject().put("manifestUrl", DEFAULT_URL).put("autoCheck", input.optBoolean("autoCheck", true)).put("downloadMode", mode).put("mirrorUrl", mirror);
+        String source = "github".equals(input.optString("source")) ? "github" : "netlify";
+        return new JSONObject().put("source", source).put("manifestUrl", "github".equals(source) ? GITHUB_URL : DEFAULT_URL).put("autoCheck", input.optBoolean("autoCheck", true)).put("downloadMode", mode).put("mirrorUrl", mirror);
     }
     private static List<URL> updateSources(URL target, JSONObject saved) throws Exception {
         List<URL> sources = new ArrayList<>(); String mode = saved.optString("downloadMode", "auto");
+        if ("https".equals(target.getProtocol()) && "localcinema-zaiming11.netlify.app".equals(target.getHost()) && (target.getPort() == -1 || target.getPort() == 443) && target.getUserInfo() == null && target.getQuery() == null && target.getRef() == null && target.getPath().matches("/updates/[A-Za-z0-9][A-Za-z0-9._-]*")) { sources.add(target); return sources; }
+        if (!target.toString().startsWith("https://github.com/zaiming11/LocalVideo/releases/")) throw new IOException("更新地址必须属于本应用的 Netlify 或 GitHub 渠道");
         if (!"direct".equals(mode)) sources.add(new URL(("custom".equals(mode) ? saved.getString("mirrorUrl") : "https://gh-proxy.com/") + target.toString()));
         sources.add(target); return sources;
     }
@@ -109,7 +113,7 @@ public class UpdateAgent {
                 String location = connection.getHeaderField("Location"); connection.disconnect(); if (location == null) throw new IOException("更新重定向地址缺失");
                 current = new URL(current, location); continue;
             }
-            if (status < 200 || status >= 300) { connection.disconnect(); throw new IOException(status == 404 ? "GitHub 尚未发布版本文件或安装包" : status == 403 || status == 429 ? "GitHub 暂时限制请求，请稍后重试" : "GitHub 更新服务器返回 HTTP " + status); }
+            if (status < 200 || status >= 300) { connection.disconnect(); throw new IOException(status == 404 ? "更新渠道尚未发布版本文件或安装包" : status == 403 || status == 429 ? "更新服务暂时限制请求，请稍后重试" : "更新服务器返回 HTTP " + status); }
             return connection;
         }
         throw new IOException("更新重定向次数过多");
@@ -117,7 +121,7 @@ public class UpdateAgent {
     private String readManifest() throws Exception {
         JSONObject saved = config();
         Exception last = null;
-        for (URL source : updateSources(new URL(DEFAULT_URL), saved)) {
+        for (URL source : updateSources(new URL(saved.getString("manifestUrl")), saved)) {
             try { return readManifestFrom(source, saved); } catch (Exception error) { last = error; }
         }
         throw last;
@@ -167,6 +171,7 @@ public class UpdateAgent {
     }
     private static URL downloadUrl(JSONObject release, String name) throws Exception {
         URL target = new URL(release.optString("downloadUrl", new URL(new URL(DEFAULT_URL), name).toString()));
+        if ("https".equals(target.getProtocol()) && "localcinema-zaiming11.netlify.app".equals(target.getHost()) && (target.getPort() == -1 || target.getPort() == 443) && target.getUserInfo() == null && target.getQuery() == null && target.getRef() == null && target.getPath().equals("/updates/" + name)) return target;
         if (release.has("downloadUrl")) {
             String[] segments = target.getPath().split("/", -1);
             if (!"https".equals(target.getProtocol()) || !"github.com".equals(target.getHost()) || target.getPort() != -1 && target.getPort() != 443 || target.getUserInfo() != null || target.getQuery() != null || target.getRef() != null || segments.length != 7 || !target.getPath().startsWith("/zaiming11/LocalVideo/releases/download/") || segments[5].isEmpty() || !name.equals(segments[6])) throw new IOException("安装包下载地址必须属于 LocalVideo 的 GitHub Release");

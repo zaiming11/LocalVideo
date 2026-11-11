@@ -4,7 +4,8 @@ const https = require('node:https')
 const tls = require('node:tls')
 const crypto = require('node:crypto')
 const { pathToFileURL } = require('node:url')
-const DEFAULT_URL = 'https://github.com/zaiming11/LocalVideo/releases/latest/download/version.json'
+const DEFAULT_URL = 'https://localcinema-zaiming11.netlify.app/updates/version.json'
+const GITHUB_URL = 'https://github.com/zaiming11/LocalVideo/releases/latest/download/version.json'
 const modelPath = __dirname.includes('app.asar') ? path.join(__dirname, 'update-model.mjs') : path.join(__dirname, '../core/update/model.mjs')
 const model = () => import(pathToFileURL(modelPath).href)
 const trustedCAs = tls.getCACertificates ? [...tls.getCACertificates('default'), ...tls.getCACertificates('system')] : undefined
@@ -18,7 +19,8 @@ function normalizeConfig(input = {}) {
     mirrorUrl = url.href.replace(/\/*$/, '/')
   }
   if (downloadMode === 'custom' && !mirrorUrl) throw new Error('请填写镜像地址')
-  return { manifestUrl: DEFAULT_URL, autoCheck: input.autoCheck !== false, downloadMode, mirrorUrl }
+  const source = input.source === 'github' ? 'github' : 'netlify'
+  return { source, manifestUrl: source === 'github' ? GITHUB_URL : DEFAULT_URL, autoCheck: input.autoCheck !== false, downloadMode, mirrorUrl }
 }
 function open(url, config, redirects = 0) {
   return new Promise((resolve, reject) => {
@@ -32,7 +34,7 @@ function open(url, config, redirects = 0) {
         open(target.href, config, redirects + 1).then(resolve, reject); return
       }
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        response.destroy(); return reject(new Error(response.statusCode === 404 ? 'GitHub 尚未发布版本文件或安装包' : response.statusCode === 403 || response.statusCode === 429 ? 'GitHub 暂时限制请求，请稍后重试' : 'GitHub 更新服务器返回 HTTP ' + response.statusCode))
+        response.destroy(); return reject(new Error(response.statusCode === 404 ? '更新渠道尚未发布版本文件或安装包' : response.statusCode === 403 || response.statusCode === 429 ? '更新服务暂时限制请求，请稍后重试' : '更新服务器返回 HTTP ' + response.statusCode))
       }
       resolve(response)
     })

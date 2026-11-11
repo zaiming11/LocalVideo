@@ -1,6 +1,12 @@
 const VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z.-]+)?$/
-export const DEFAULT_UPDATE_URL = 'https://github.com/zaiming11/LocalVideo/releases/latest/download/version.json'
+export const NETLIFY_UPDATE_ROOT = 'https://localcinema-zaiming11.netlify.app/updates/'
+export const DEFAULT_UPDATE_URL = NETLIFY_UPDATE_ROOT + 'version.json'
+export const GITHUB_UPDATE_URL = 'https://github.com/zaiming11/LocalVideo/releases/latest/download/version.json'
 export const DEFAULT_MIRROR_URL = 'https://gh-proxy.com/'
+export function updateSourceConfig(input = {}) {
+  const source = input.source === 'github' ? 'github' : 'netlify'
+  return { source, manifestUrl: source === 'github' ? GITHUB_UPDATE_URL : DEFAULT_UPDATE_URL }
+}
 export function updateNetworkConfig(input = {}) {
   const downloadMode = ['auto', 'direct', 'custom'].includes(input.downloadMode) ? input.downloadMode : 'auto'
   let mirrorUrl = String(input.mirrorUrl || '').trim()
@@ -14,6 +20,11 @@ export function updateNetworkConfig(input = {}) {
 }
 export function updateSources(url, config = {}) {
   const network = updateNetworkConfig(config)
+  if (url.startsWith(NETLIFY_UPDATE_ROOT)) {
+    const target = new URL(url)
+    if (target.href !== url || target.origin !== 'https://localcinema-zaiming11.netlify.app' || target.username || target.password || target.search || target.hash || !/^\/updates\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(target.pathname)) throw new Error('Netlify 更新地址无效')
+    return [url]
+  }
   if (!url.startsWith('https://github.com/zaiming11/LocalVideo/releases/')) throw new Error('更新地址必须属于 LocalVideo GitHub Releases')
   const prefix = network.downloadMode === 'custom' ? network.mirrorUrl : DEFAULT_MIRROR_URL
   return network.downloadMode === 'direct' ? [url] : [prefix + url, url]
@@ -23,6 +34,11 @@ export function githubDownloadUrl(value, file, URLClass = globalThis.URL) {
   const segments = url.pathname.split('/')
   if (url.origin !== 'https://github.com' || url.username || url.password || url.search || url.hash || segments.length !== 7 || segments.slice(1, 5).join('/') !== 'zaiming11/LocalVideo/releases/download' || !segments[5] || ['.', '..'].includes(decodeURIComponent(segments[5])) || segments[6] !== file) throw new Error('安装包下载地址必须属于 LocalVideo 的 GitHub Release')
   return url.href
+}
+export function updateDownloadUrl(value, file, URLClass = globalThis.URL) {
+  const url = new URLClass(value)
+  if (url.origin === 'https://localcinema-zaiming11.netlify.app' && !url.username && !url.password && !url.search && !url.hash && url.pathname === '/updates/' + file) return url.href
+  return githubDownloadUrl(value, file, URLClass)
 }
 function parts(version) {
   const match = VERSION.exec(String(version || '').replace(/^v/, ''))
@@ -62,6 +78,6 @@ export function readRelease(input, platform, currentVersion, URLClass = globalTh
     })
     if (chunks.reduce((sum, chunk) => sum + chunk.size, 0) !== release.size) throw new Error('安装包分片总大小不一致')
   }
-  const downloadUrl = release.downloadUrl === undefined ? undefined : githubDownloadUrl(release.downloadUrl, release.file, URLClass)
+  const downloadUrl = release.downloadUrl === undefined ? undefined : updateDownloadUrl(release.downloadUrl, release.file, URLClass)
   return { version: release.version, file: release.file, downloadUrl, sha256: release.sha256.toLowerCase(), size: release.size, chunks, versionCode: release.versionCode, notes: String(release.notes || '').slice(0, 4000), publishedAt: String(release.publishedAt || data.publishedAt || ''), available: compareVersions(release.version, currentVersion) > 0 }
 }

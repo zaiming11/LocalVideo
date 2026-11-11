@@ -1,5 +1,7 @@
 # GitHub 应用更新
 
+发布约定：本项目的“提交代码，打包发布”必须同时完成 GitHub Release 和 Netlify 生产部署。当前客户端默认更新来源已改为 Netlify，GitHub 为可切换的备用渠道；Netlify 构建、部署和核验步骤见 [Netlify 发布说明](netlify.md)。
+
 Windows 与 Android 默认从 [zaiming11/LocalVideo Releases](https://github.com/zaiming11/LocalVideo/releases) 检查和下载安装包，不需要账号、密码或个人访问令牌。
 
 版本清单地址：`https://github.com/zaiming11/LocalVideo/releases/latest/download/version.json`。

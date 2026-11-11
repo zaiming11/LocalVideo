@@ -1,7 +1,7 @@
 {
   "name": "local-video-desktop",
   "productName": "本地影库",
-  "version": "1.1.0-alpha.7",
+  "version": "1.1.0-alpha.8",
   "description": "本地影库 Windows 桌面播放器",
   "author": "LocalVideo",
   "private": true,

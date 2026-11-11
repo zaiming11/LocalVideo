@@ -3,11 +3,14 @@
     <view class="update-heading"><text>应用更新</text><text class="update-version">当前版本 {{ updateState.currentVersion }}</text></view>
     <text v-if="!updateState.supported" class="update-hint">请在 Windows 桌面版或 Android App 中使用更新功能。</text>
     <template v-else>
-      <text class="update-hint">从 GitHub Releases 检查并下载更新，无需账号或密码。安装包校验后，由你确认安装。</text>
-      <text class="update-hint">更新仓库：zaiming11/LocalVideo</text>
-      <view class="update-source"><text>更新网络</text><picker :range="networkLabels" :value="networkIndex" :disabled="!!updateState.phase || saving" @change="changeNetwork"><text>{{ networkLabels[networkIndex] }} ⌄</text></picker></view>
-      <view v-if="networkMode === 'custom'" class="update-fields"><input v-model="mirrorUrl" aria-label="自定义镜像地址" placeholder="https://镜像域名/" :disabled="!!updateState.phase || saving" /><button :disabled="!!updateState.phase || saving" @click="saveNetwork">保存镜像</button></view>
-      <text class="update-hint">自动模式优先使用加速镜像，失败后重试 GitHub；也可选择直连或填写自己的镜像。公共镜像的可用性可能变化。</text>
+      <text class="update-hint">从 Netlify 或 GitHub 检查并下载更新，无需账号或密码。安装包校验后，由你确认安装。</text>
+      <view class="update-source"><text>更新来源</text><picker :range="sourceLabels" :value="sourceIndex" :disabled="!!updateState.phase || saving" @change="changeSource"><text>{{ sourceLabels[sourceIndex] }} ⌄</text></picker></view>
+      <text class="update-hint">{{ updateState.config.source === 'github' ? '更新仓库：zaiming11/LocalVideo' : '更新服务：localcinema-zaiming11.netlify.app' }}</text>
+      <template v-if="updateState.config.source === 'github'">
+        <view class="update-source"><text>更新网络</text><picker :range="networkLabels" :value="networkIndex" :disabled="!!updateState.phase || saving" @change="changeNetwork"><text>{{ networkLabels[networkIndex] }} ⌄</text></picker></view>
+        <view v-if="networkMode === 'custom'" class="update-fields"><input v-model="mirrorUrl" aria-label="自定义镜像地址" placeholder="https://镜像域名/" :disabled="!!updateState.phase || saving" /><button :disabled="!!updateState.phase || saving" @click="saveNetwork">保存镜像</button></view>
+        <text class="update-hint">自动模式优先使用加速镜像，失败后重试 GitHub；也可选择直连或填写自己的镜像。</text>
+      </template>
       <view class="update-auto"><text>启动时检查更新</text><switch :checked="updateState.config.autoCheck" :disabled="!!updateState.phase || saving" color="#dafa6b" @change="saveAutoCheck" /></view>
       <view class="update-actions">
         <button :disabled="!!updateState.phase" @click="run(checkForUpdates)">{{ updateState.phase === 'checking' ? '正在检查…' : '检查更新' }}</button>
@@ -27,12 +30,15 @@ import { computed, onMounted, ref } from 'vue'
 import { updateState, loadUpdateConfig, saveUpdateConfig, checkForUpdates, downloadUpdate, installUpdate } from '../core/update/client.js'
 const localError = ref(''), saving = ref(false), networkMode = ref('auto'), mirrorUrl = ref('')
 const networkModes = ['auto', 'direct', 'custom'], networkLabels = ['自动加速', 'GitHub 直连', '自定义镜像']
+const sources = ['netlify', 'github'], sourceLabels = ['Netlify（默认）', 'GitHub Releases']
+const sourceIndex = computed(() => updateState.config.source === 'github' ? 1 : 0)
 const networkIndex = computed(() => networkModes.indexOf(networkMode.value))
 const percent = computed(() => updateState.total ? Math.min(100, Math.floor(updateState.received / updateState.total * 100)) : 0)
 const size = value => (value / 1024 / 1024).toFixed(1) + ' MiB'
 onMounted(async () => { try { await loadUpdateConfig(); networkMode.value = updateState.config.downloadMode || 'auto'; mirrorUrl.value = updateState.config.mirrorUrl || '' } catch (e) { localError.value = e.message } })
 async function run(action) { localError.value = ''; try { await action() } catch (e) { localError.value = e.message } }
 async function saveAutoCheck(event) { saving.value = true; try { await run(() => saveUpdateConfig({ ...updateState.config, autoCheck: event.detail.value })) } finally { saving.value = false } }
+async function changeSource(event) { saving.value = true; try { await run(() => saveUpdateConfig({ ...updateState.config, source: sources[Number(event.detail.value)] })) } finally { saving.value = false } }
 async function changeNetwork(event) { networkMode.value = networkModes[Number(event.detail.value)]; if (networkMode.value !== 'custom') await saveNetwork() }
 async function saveNetwork() { saving.value = true; try { await run(() => saveUpdateConfig({ ...updateState.config, downloadMode: networkMode.value, mirrorUrl: mirrorUrl.value })) } finally { saving.value = false } }
 function confirmInstall() { uni.showModal({ title: '安装更新', content: '安装前会保存播放记录。Windows 将关闭应用并打开安装器，Android 会打开系统安装界面。', confirmText: '安装', success: result => { if (result.confirm) run(installUpdate) } }) }

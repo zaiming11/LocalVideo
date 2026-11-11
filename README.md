@@ -2,16 +2,18 @@
 
 一款用于整理和播放本地视频的应用，提供 Windows 桌面版与 Android 版。支持文件夹导入、媒体库浏览、自然排序、播放记录和进度续播。
 
+[Netlify 在线版](https://localcinema-zaiming11.netlify.app) · [Android 安装包（Netlify）](https://localcinema-zaiming11.netlify.app/updates/LocalVideo-1.0.8-Android.apk)
+
 ## 下载安装
 
 下载后即可安装或运行，无需准备 Node.js、HBuilderX 或开发环境。
 
 | 平台 | GitHub 下载 | 加速镜像下载 | 版本 | 使用方式 |
 | --- | --- | --- | --- | --- |
-| Windows 10/11 · 64 位 | [安装版 EXE](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.7-android-1.0.7/LocalVideo-1.1.0-alpha.7-Windows-x64-Setup.exe) | [镜像下载 EXE](https://gh-proxy.com/https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.7-android-1.0.7/LocalVideo-1.1.0-alpha.7-Windows-x64-Setup.exe) | 1.1.0-alpha.7 | 安装后从桌面或开始菜单打开 |
-| Android 6.0 及以上 · ARM64 | [Android APK](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.7-android-1.0.7/LocalVideo-1.0.7-Android.apk) | [镜像下载 APK](https://gh-proxy.com/https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.7-android-1.0.7/LocalVideo-1.0.7-Android.apk) | 1.0.7 | 在手机上打开 APK 并安装 |
+| Windows 10/11 · 64 位 | [安装版 EXE](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.8-android-1.0.8/LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe) | [镜像下载 EXE](https://gh-proxy.com/https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.8-android-1.0.8/LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe) | 1.1.0-alpha.8 | 安装后从桌面或开始菜单打开 |
+| Android 6.0 及以上 · ARM64 | [Android APK](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.8-android-1.0.8/LocalVideo-1.0.8-Android.apk) | [镜像下载 APK](https://gh-proxy.com/https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.8-android-1.0.8/LocalVideo-1.0.8-Android.apk) | 1.0.8 | 在手机上打开 APK 并安装 |
 
-[查看全部版本与更新说明](https://github.com/zaiming11/LocalVideo/releases) · [下载 SHA-256 校验文件](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.7-android-1.0.7/SHA256SUMS.txt)
+[查看全部版本与更新说明](https://github.com/zaiming11/LocalVideo/releases) · [下载 SHA-256 校验文件](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.8-android-1.0.8/SHA256SUMS.txt)
 
 GitHub 无法访问时可尝试加速镜像。镜像由第三方提供，同步可能延迟；应用内支持自动加速、GitHub 直连和自定义镜像。Windows 当前为测试版，欢迎反馈使用问题。
 
@@ -69,6 +71,6 @@ $env:UNI_HBUILDERX_PLUGINS = 'D:/HBuilderX/plugins'
 
 ## 问题反馈
 
-应用更新使用 GitHub Releases，默认镜像优先、失败自动直连，无需配置账号或密码。安装包含新版更新功能的应用后，可在“设置 → 关于 → 应用更新”检查、下载并确认安装，也可开启启动时自动检查。旧客户端需先手动安装一次新版；后续发布流程见 [GitHub 更新说明](docs/github-updates.md)。
+应用默认从 Netlify 检查和下载安装包，也可在设置中切换 GitHub Releases；GitHub 渠道保留自动镜像和直连。无需配置账号或密码。安装包含新版更新功能的应用后，可在“设置 → 关于 → 应用更新”检查、下载并确认安装，也可开启启动时自动检查。旧客户端需先手动安装一次新版；后续发布流程见 [GitHub 更新说明](docs/github-updates.md)。
 
 请在 [Issues](https://github.com/zaiming11/LocalVideo/issues) 中描述系统版本、应用版本、操作步骤和实际现象；播放问题可附上视频容器及编码信息。

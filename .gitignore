@@ -1,4 +1,5 @@
 unpackage/
+.netlify/
 .DS_Store
 .hbuilderx/
 desktop/node_modules/
@@ -14,6 +15,7 @@ node_modules/
 tools/.android-build/
 desktop/.android-runtime/
 desktop/.update-publish/
+desktop/.netlify-updates/
 desktop/update-model.mjs
 desktop/vlc-runtime/
 static/vlc-native/*.jar
