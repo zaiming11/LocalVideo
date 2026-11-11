@@ -1,6 +1,7 @@
 import { reactive } from 'vue'
 import appManifest from '../../manifest.json'
 import { readRelease, DEFAULT_UPDATE_URL } from './model.mjs'
+import { UniversalURL } from '../tvbox/vendor.mjs'
 import { androidUpdateConfig, androidUpdateTask } from './android.js'
 import { saveState } from '../store.js'
 
@@ -41,7 +42,7 @@ export async function checkForUpdates(automatic = false) {
     await loadUpdateConfig()
     if (!updateState.supported || automatic && !updateState.config.autoCheck) return
     updateState.phase = 'checking'; updateState.error = ''; updateState.message = ''
-    const result = platform() === 'windows' ? await desktop().checkUpdate() : { release: readRelease(await androidUpdateTask('check'), 'android', updateState.currentVersion), checkedAt: Date.now() }
+    const result = platform() === 'windows' ? await desktop().checkUpdate() : { release: readRelease(await androidUpdateTask('check'), 'android', updateState.currentVersion, UniversalURL), checkedAt: Date.now() }
     updateState.checkedAt = result.checkedAt; updateState.release = result.release?.available ? result.release : null; updateState.downloaded = false
     updateState.message = !result.release ? 'GitHub 尚未发布此平台版本' : updateState.release ? `发现新版本 ${result.release.version}` : '当前已是最新版本'
     if (automatic && updateState.release) {

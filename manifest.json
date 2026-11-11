@@ -2,8 +2,8 @@
     "name" : "本地影库",
     "appid" : "__UNI__8B2E700",
     "description" : "本地视频播放器",
-    "versionName" : "1.0.6",
-    "versionCode" : "106",
+    "versionName" : "1.0.7",
+    "versionCode" : "107",
     "transformPx" : false,
     "app-plus" : {
         "screenOrientation" : [ "portrait-primary" ],

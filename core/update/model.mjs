@@ -18,8 +18,8 @@ export function updateSources(url, config = {}) {
   const prefix = network.downloadMode === 'custom' ? network.mirrorUrl : DEFAULT_MIRROR_URL
   return network.downloadMode === 'direct' ? [url] : [prefix + url, url]
 }
-export function githubDownloadUrl(value, file) {
-  const url = new URL(value)
+export function githubDownloadUrl(value, file, URLClass = globalThis.URL) {
+  const url = new URLClass(value)
   const segments = url.pathname.split('/')
   if (url.origin !== 'https://github.com' || url.username || url.password || url.search || url.hash || segments.length !== 7 || segments.slice(1, 5).join('/') !== 'zaiming11/LocalVideo/releases/download' || !segments[5] || ['.', '..'].includes(decodeURIComponent(segments[5])) || segments[6] !== file) throw new Error('安装包下载地址必须属于 LocalVideo 的 GitHub Release')
   return url.href
@@ -42,7 +42,7 @@ export function compareVersions(left, right) {
   }
   return 0
 }
-export function readRelease(input, platform, currentVersion) {
+export function readRelease(input, platform, currentVersion, URLClass = globalThis.URL) {
   const data = typeof input === 'string' ? JSON.parse(input.replace(/^\uFEFF/, '')) : input
   if (data?.schemaVersion !== 1 || !data.platforms || !['windows', 'android'].includes(platform)) throw new Error('版本管理文件格式不正确')
   const release = data.platforms[platform]
@@ -62,6 +62,6 @@ export function readRelease(input, platform, currentVersion) {
     })
     if (chunks.reduce((sum, chunk) => sum + chunk.size, 0) !== release.size) throw new Error('安装包分片总大小不一致')
   }
-  const downloadUrl = release.downloadUrl === undefined ? undefined : githubDownloadUrl(release.downloadUrl, release.file)
+  const downloadUrl = release.downloadUrl === undefined ? undefined : githubDownloadUrl(release.downloadUrl, release.file, URLClass)
   return { version: release.version, file: release.file, downloadUrl, sha256: release.sha256.toLowerCase(), size: release.size, chunks, versionCode: release.versionCode, notes: String(release.notes || '').slice(0, 4000), publishedAt: String(release.publishedAt || data.publishedAt || ''), available: compareVersions(release.version, currentVersion) > 0 }
 }

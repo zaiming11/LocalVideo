@@ -1,5 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { compareVersions, readRelease, githubDownloadUrl, updateSources, updateNetworkConfig, DEFAULT_UPDATE_URL } from '../core/update/model.mjs'
 
 test('update versions compare numeric segments and prereleases correctly', () => {
@@ -35,4 +36,24 @@ test('update routing supports automatic, direct and custom HTTPS mirrors without
   assert.deepEqual(updateSources(DEFAULT_UPDATE_URL, { downloadMode: 'direct' }), [DEFAULT_UPDATE_URL])
   assert.deepEqual(updateSources(DEFAULT_UPDATE_URL, { downloadMode: 'custom', mirrorUrl: 'https://mirror.example/gh' }), ['https://mirror.example/gh/' + DEFAULT_UPDATE_URL, DEFAULT_UPDATE_URL])
   for (const mirrorUrl of ['', 'http://mirror.example/', 'https://user:pass@mirror.example/', 'https://mirror.example/?token=a', 'https://mirror.example/#hash']) assert.throws(() => updateNetworkConfig({ downloadMode: 'custom', mirrorUrl }))
+})
+
+test('Android release validation works in a runtime without a global URL constructor', () => {
+  const model = new URL('../core/update/model.mjs', import.meta.url).href
+  const vendor = new URL('../core/tvbox/vendor.mjs', import.meta.url).href
+  const code = `
+    import assert from 'node:assert/strict';
+    globalThis.URL = undefined;
+    const { readRelease } = await import(${JSON.stringify(model)});
+    const { UniversalURL } = await import(${JSON.stringify(vendor)});
+    const file = 'LocalVideo-1.0.6-Android.apk';
+    const downloadUrl = 'https://github.com/zaiming11/LocalVideo/releases/download/v1.0.6/' + file;
+    const manifest = { schemaVersion: 1, platforms: { android: { version: '1.0.6', versionCode: 106, file, downloadUrl, size: 100, sha256: 'a'.repeat(64) } } };
+    const release = readRelease(manifest, 'android', '1.0.5', UniversalURL);
+    assert.equal(release.available, true); assert.equal(release.downloadUrl, downloadUrl);
+    manifest.platforms.android.downloadUrl = downloadUrl.replace('github.com', 'evil.example');
+    assert.throws(() => readRelease(manifest, 'android', '1.0.5', UniversalURL));
+  `
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8', timeout: 10000, windowsHide: true })
+  assert.equal(result.status, 0, result.stderr || result.error?.message)
 })
