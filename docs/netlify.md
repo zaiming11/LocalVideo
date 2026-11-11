@@ -47,3 +47,7 @@ netlify deploy --site e689e3e5-508c-40da-a3ef-cf4a189a6538 --no-build --prod
 Netlify Functions 的运行时长、响应体大小和站点带宽额度仍适用。长视频与直播的实际可播性还取决于源站和浏览器解码能力；配置有效性检查不等于所有频道能播放。
 
 验证：`node --test tools/netlify.test.mjs desktop/test/tvbox-network-retry.test.cjs desktop/test/tvbox-playlist-range.test.cjs`。
+
+## 本轮安装包发布（2026-11-11）
+
+Windows `1.1.0-alpha.8` 与 Android `1.0.8 / 108` 已重新打包，默认更新来源为 Netlify，GitHub 可切换使用。Netlify 生产部署 ID：`6af41b97a40b3d0a818041ad`，站点为 `https://localcinema-zaiming11.netlify.app`。本轮只发布当前版本的安装文件和分片，发布完成后未额外安排测试或验收。
