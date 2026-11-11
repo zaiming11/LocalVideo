@@ -16,6 +16,11 @@ import java.lang.reflect.*;
 /** Android-only asynchronous host; never loaded by the Windows application. */
 public class Bridge {
     private Context context;
+    private Context jsContext;
+    private String jsAssets="",jsVersion="";
+    private final Map<String,JsSpider> jsSpiders=new ConcurrentHashMap<>();
+    private final Map<String,PythonSpider> pythonSpiders=new ConcurrentHashMap<>();
+    private PythonRuntime pythonRuntime;
     private File cache;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final ExecutorService networkWorker = Executors.newFixedThreadPool(3);
@@ -36,6 +41,7 @@ public class Bridge {
         // In a packaged uni-app the host API lives in a child DEX loader. Guarded
         // plugins create another loader from the Application; expose the host API there.
         context = application.getClassLoader() == getClass().getClassLoader() ? application : new PluginApplication((Application)application, getClass().getClassLoader());
+        jsContext=application;
         cache = new File(directory); cache.mkdirs();
         server = new ServerSocket(0, 16, InetAddress.getByName("127.0.0.1"));
         proxyPort = server.getLocalPort();
@@ -49,6 +55,11 @@ public class Bridge {
         thread.setDaemon(true); thread.start();
     }
     public static String proxyUrl() { return "http://127.0.0.1:" + proxyPort + "/proxy"; }
+    public void configureJavascript(String assets,String version){
+        if(!jsVersion.equals(version)){for(JsSpider spider:jsSpiders.values())spider.close();jsSpiders.clear();}
+        jsAssets=assets;jsVersion=version;
+    }
+    public void configurePython(String assets,String version){pythonRuntime=new PythonRuntime(jsContext,cache,assets,version);pythonSpiders.clear();}
     public String getProxyUrl() { return proxyUrl(); }
     public String playbackUrl(String url, String headers) throws Exception {
         if (url.startsWith("http://127.0.0.1:9978/proxy")) return url.replace("http://127.0.0.1:9978/proxy", proxyUrl());
@@ -86,6 +97,25 @@ public class Bridge {
             return new JSONObject().put("body", response.body).put("url", response.url);
         }
         JSONObject site = request.getJSONObject("site");
+        String api=site.optString("api");
+        if(site.optString("api").matches("(?i)https?://.*\\.m?js(?:[?#].*)?")){
+            if(jsAssets.isEmpty())throw new IOException("缺少 JS Spider 内置依赖，请更新开发资源");
+            String id=digest(site.toString().getBytes("UTF-8"),"SHA-256");
+            JsSpider js=jsSpiders.get(id);
+            if(js==null||js.isClosed()){
+                if(jsSpiders.size()>=4){String oldest=jsSpiders.keySet().iterator().next();JsSpider removed=jsSpiders.remove(oldest);if(removed!=null)removed.close();}
+                js=new JsSpider(jsContext,jsAssets,id,site);jsSpiders.put(id,js);
+            }
+            JSONObject args=request.optJSONObject("args");
+            return js.execute(request.getString("action"),args==null?new JSONObject():args);
+        }
+        if(api.matches("(?i)https?://.*\\.py(?:[?#].*)?")){
+            if(pythonRuntime==null)throw new IOException("缺少 Python Spider 运行库配置，请更新开发资源");
+            String id=digest(site.toString().getBytes("UTF-8"),"SHA-256");PythonSpider python=pythonSpiders.get(id);
+            if(python==null){if(pythonSpiders.size()>=4)pythonSpiders.remove(pythonSpiders.keySet().iterator().next());python=new PythonSpider(pythonRuntime,id,site);pythonSpiders.put(id,python);}
+            JSONObject args=request.optJSONObject("args");return python.execute(request.getString("action"),args==null?new JSONObject():args);
+        }
+        if(!api.matches("csp_[A-Za-z0-9_.$]+"))throw new IOException("当前 Android 宿主支持 CSP/JAR、JS 和 Python Spider，此插件格式尚未支持");
         String jarSpec = site.optString("jar");
         if (jarSpec.isEmpty()) throw new IOException("配置没有提供 Spider JAR 地址");
         String key = jarSpec + "|" + site.optString("key");
@@ -118,8 +148,6 @@ public class Bridge {
                 catch (ClassNotFoundException | NoSuchMethodException ignored) {}
                 loaders.put(jarSpec, loader);
             }
-            String api = site.getString("api");
-            if (!api.matches("csp_[A-Za-z0-9_.$]+")) throw new IOException("当前 Android 宿主支持 csp_ JAR 站点");
             spider = loader.loadClass("com.github.catvod.spider." + api.substring(4)).newInstance();
             Object extend = site.opt("ext");
             String ext = extend == null || extend == JSONObject.NULL ? "" : extend.toString();
@@ -194,8 +222,25 @@ public class Bridge {
             if ("/media".equals(uri.getPath())) { serveRemote(client, params, requestHeaders, fields[0]); return; }
             if(requestHeaders.containsKey("range")){params.put("Range",requestHeaders.get("range"));params.put("range",requestHeaders.get("range"));}
             Object[] response=null;
-            try { response=(Object[])recentLoader.loadClass("com.github.catvod.spider.Proxy").getMethod("proxy", Map.class).invoke(null,params); }
-            catch(ClassNotFoundException|NoSuchMethodException ignored){if(recentSpider!=null)response=(Object[])invoke(recentSpider,"proxyLocal",new Class[]{Map.class},params);}
+            if("js".equals(params.get("do"))&&params.containsKey("js")){
+                JsSpider js=jsSpiders.get(params.get("js"));if(js==null)throw new IOException("JS 代理已失效，请重新打开影片");
+                JSONObject input=new JSONObject();for(Map.Entry<String,String> entry:params.entrySet())input.put(entry.getKey(),entry.getValue());
+                JSONArray value=new JSONArray(js.execute("proxy",input));
+                Map<String,String> extra=new HashMap<>();JSONObject supplied=value.optJSONObject(3);
+                if(supplied!=null)for(Iterator<String> keys=supplied.keys();keys.hasNext();){String key=keys.next();extra.put(key,supplied.optString(key));}
+                response=new Object[]{value.getInt(0),value.getString(1),new ByteArrayInputStream(value.getString(2).getBytes("UTF-8")),extra};
+            }else if("py".equals(params.get("do"))&&params.containsKey("py")){
+                PythonSpider python=pythonSpiders.get(params.get("py"));if(python==null)throw new IOException("Python 代理已失效，请重新打开影片");
+                JSONObject input=new JSONObject();for(Map.Entry<String,String> entry:params.entrySet())input.put(entry.getKey(),entry.getValue());
+                JSONObject value=(JSONObject)python.execute("proxy",input);
+                Map<String,String> extra=new HashMap<>();JSONObject supplied=value.optJSONObject("headers");
+                if(supplied!=null)for(Iterator<String> keys=supplied.keys();keys.hasNext();){String key=keys.next();extra.put(key,supplied.optString(key));}
+                byte[] body=value.optBoolean("binary")?android.util.Base64.decode(value.getString("body"),android.util.Base64.DEFAULT):value.getString("body").getBytes("UTF-8");
+                response=new Object[]{value.getInt("status"),value.getString("mime"),new ByteArrayInputStream(body),extra};
+            }else if(recentLoader!=null){
+                try { response=(Object[])recentLoader.loadClass("com.github.catvod.spider.Proxy").getMethod("proxy", Map.class).invoke(null,params); }
+                catch(ClassNotFoundException|NoSuchMethodException ignored){if(recentSpider!=null)response=(Object[])invoke(recentSpider,"proxyLocal",new Class[]{Map.class},params);}
+            }
             if(response==null||response.length<3)throw new IOException("插件没有返回代理数据");
             int status=((Number)response[0]).intValue(); String mime=String.valueOf(response[1]);
             if(mime.contains("\r")||mime.contains("\n"))throw new IOException("Bad MIME");

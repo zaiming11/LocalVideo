@@ -1,0 +1,13 @@
+{
+  "name": "localvideo-js-spider-build",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "cheerio": "1.0.0-rc.12",
+    "crypto-js": "4.2.0",
+    "esbuild": "0.25.12",
+    "jsonpath-plus": "10.4.0",
+    "nunjucks": "3.2.4",
+    "yazl": "3.3.1"
+  }
+}

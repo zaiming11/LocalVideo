@@ -1,0 +1,42 @@
+{
+  "python": "3.11.17",
+  "release": "cpython-3.11.17-0",
+  "minApi": 24,
+  "artifacts": {
+    "arm64": {
+      "url": "https://repo.maven.apache.org/maven2/com/chaquo/python/target/3.11.17-0/target-3.11.17-0-arm64-v8a.zip",
+      "sha256": "399b58d04898f2c7d5f0044e141bdf3818552e538e5f36d06d7fe0bebc298582",
+      "size": 6992518
+    },
+    "armv7": {
+      "url": "https://repo.maven.apache.org/maven2/com/chaquo/python/target/3.11.17-0/target-3.11.17-0-armeabi-v7a.zip",
+      "sha256": "7516b90fcb8a5a2df70e5f9899aab7e63fa43efa0455c3ba7b846ae54d70ee2c",
+      "size": 6287159
+    },
+    "stdlib": {
+      "url": "https://repo.maven.apache.org/maven2/com/chaquo/python/target/3.11.17-0/target-3.11.17-0-stdlib.zip",
+      "sha256": "860d5684cfb30cb4b7ff71dd3ba3f9b352e7a91a7329552e1be7ca87a4ae4cf5",
+      "size": 2721869
+    }
+  },
+  "jni": {
+    "arm64-v8a": {
+      "sha256": "fe855e3335534d0a3878120bca97396db818cfafde73fc55fee4fdcf6a12af50",
+      "size": 48552
+    },
+    "armeabi-v7a": {
+      "sha256": "1c4fdba8725804275c4d896a072882aee084294156c11d7be579d0f605c41549",
+      "size": 45720
+    }
+  },
+  "requirements": {
+    "sha256": "4139af21e02228f6a8e12ab422393259b241b73092cd3a218b6a1f874be19fbc",
+    "size": 669561
+  },
+  "host": {
+    "localvideo_python_host.py": "180d8fef18ec974b8ad45caf6c56c12d67d3b61ae2de5af97da179862acbe90e",
+    "base/__init__.py": "399c86a329c0919a73b756c2b546be9cfc0edb1380adfee5ac492f5bcf40185d",
+    "base/spider.py": "df25497ad4f7f9169cd2d88d8d84700621b5f2148ea3a005f3d53e8355a28819"
+  },
+  "certificate": "2089fc5a25836401faee99f722460b01b393999746a0fb817943666d6ecc0458"
+}

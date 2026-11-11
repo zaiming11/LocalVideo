@@ -64,12 +64,14 @@ else {
         const { VlcPlayer } = require('./vlc-player.cjs')
         vlcPlayer = new VlcPlayer({ owner: mainWindow, library })
       }
-      try { return await vlcPlayer.open(input) } catch (error) { await vlcPlayer.close(); throw error }
+      const currentPlayer=vlcPlayer
+      try { return await currentPlayer.open(input) } catch (error) { await currentPlayer.close(); throw error }
     })
     ipcMain.handle('vlc:command', (event, action, input = {}) => {
       if (!trusted(event)) throw new Error('Invalid sender')
       if (action === 'close') return vlcPlayer?.close()
       if (action === 'focus') { vlcPlayer?.focus(); return true }
+      if (action === 'visible') { vlcPlayer?.setVisible(!!input.value); return true }
       if (action === 'fullscreen') { vlcPlayer?.window?.setFullScreen(!!input.value); return true }
       if (action === 'fit') { if (vlcPlayer && !vlcPlayer.closed) { vlcPlayer.fill = !!input.fill; vlcPlayer.align?.() } return true }
       if (!['play','pause','seek','rate','volume'].includes(action)) throw new Error('Invalid player command')
@@ -138,6 +140,7 @@ else {
       } else mainWindow.show()
     })
     mainWindow.on('closed', () => { vlcPlayer?.close(); mainWindow = null })
+    mainWindow.on('close',event=>{ if(vlcPlayer && !vlcPlayer.closed){event.preventDefault();vlcPlayer.close().finally(()=>mainWindow?.close())} })
     mainWindow.loadURL('localvideo://app/')
   }).catch((error) => { dialog.showErrorBox('本地影库启动失败', error.message); app.quit() })
 }

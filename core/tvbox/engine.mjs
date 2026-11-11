@@ -43,8 +43,13 @@ export function parseData(text) {
 }
 export function siteSupport(site, options = {}) {
   if ([0, 1, 4].includes(Number(site.type)) && /^https?:\/\//i.test(site.api)) return { supported: true, reason: '' }
+  if (Number(site.type) === 3 && options.android && /^https?:\/\/.*\.m?js(?:[?#]|$)/i.test(site.api)) return { supported: true, native: true, javascript: true, reason: '' }
   if (Number(site.type) === 3 && options.android && /^csp_/.test(site.api) && site.jar) return { supported: true, native: true, reason: '' }
-  if (Number(site.type) === 3) return { supported: false, reason: /\.js(?:[?#]|$)/i.test(site.api) ? '需要 JS Spider 执行器；本版支持 HTTP 接口源' : '此站点需要 Android JAR / DEX 插件，Windows 版不支持；请使用安卓 App 或切换 PC 兼容的 HTTP 接口源' }
+  if (Number(site.type) === 3 && options.android && /^https?:\/\/.*\.py(?:[?#]|$)/i.test(site.api)) return { supported: true, native: true, python: true, reason: '' }
+  if (Number(site.type) === 3 && /\.py(?:[?#]|$)/i.test(site.api)) return { supported: false, reason: 'Python Spider 目前仅支持安卓 App；Windows／浏览器请使用 HTTP 接口源' }
+  if (Number(site.type) === 3 && options.android && /^csp_/.test(site.api)) return { supported: false, reason: '此站点使用 Android CSP/JAR 插件，但配置未提供有效的 Spider JAR 地址' }
+  if (Number(site.type) === 3 && options.android) return { supported: false, reason: '此站点的插件格式尚未支持；安卓 App 支持 CSP/JAR、JS 和 Python Spider' }
+  if (Number(site.type) === 3) return { supported: false, reason: /\.m?js(?:[?#]|$)/i.test(site.api) ? 'JS Spider 当前支持安卓 App；此平台请使用 HTTP 接口源' : '此站点需要 Android JAR / DEX 插件，Windows 版不支持；请使用安卓 App 或切换 PC 兼容的 HTTP 接口源' }
   return { supported: false, reason: '该站点类型尚未支持；可使用 XML、JSON 或 Type 4 HTTP 接口源' }
 }
 export function parseConfig(text, url = '', options = {}) {
@@ -69,7 +74,7 @@ export function parseConfig(text, url = '', options = {}) {
     const jar = httpUrl(spec[0], url)
     result.jar = jar ? jar + (spec[1] ? ';md5;' + spec[1] : '') : ''
     const extension = site.ext ?? ''
-    const relativeExtension = typeof extension === 'string' && (/^(?:\.{1,2}\/|\/)/.test(extension.trim()) || localOrigin(url) && /\/local\/[a-f0-9]{32}\/[a-f0-9]{32}\//.test(url) && /^(?![\s{\[]|[a-z][\w+.-]*:)[^?#\r\n]+\.(?:json5?|js|txt|conf)(?:[?#].*)?$/i.test(extension.trim()))
+    const relativeExtension = typeof extension === 'string' && (/^(?:\.{1,2}\/|\/)/.test(extension.trim()) || localOrigin(url) && /\/local\/[a-f0-9]{32}\/[a-f0-9]{32}\//.test(url) && /^(?![\s{\[]|[a-z][\w+.-]*:)[^?#\r\n]+\.(?:json5?|m?js|py|txt|conf)(?:[?#].*)?$/i.test(extension.trim()))
     result.ext = relativeExtension ? httpUrl(extension, url) || extension : extension
     return { ...result, ...siteSupport(result, options) }
   })
@@ -96,7 +101,7 @@ export function normalizeResponse(data, base) {
   if (!value || (!Array.isArray(value.list) && !Array.isArray(value.class))) throw new Error(cleanText(value?.msg || value?.errmsg) || '接口未返回影视列表')
   return { categories: list(value.class).map(item => ({ id: string(item.type_id), name: cleanText(item.type_name) })),
     page: Number(value.page) || 1, pages: Math.max(1, Number(value.pagecount) || 1),
-    items: list(value.list).map(item => { const picture = mediaSource(item.vod_pic, base); return { id: string(item.vod_id), name: cleanText(item.vod_name), pic: picture.url, picHeaders: picture.headers, remarks: cleanText(item.vod_remarks), description: cleanText(item.vod_content), from: string(item.vod_play_from), play: string(item.vod_play_url) } }) }
+    items: list(value.list).map(item => { const picture = mediaSource(item.vod_pic, base); return { id: string(item.vod_id), name: cleanText(item.vod_name), pic: picture.url, picHeaders: picture.headers, remarks: cleanText(item.vod_remarks), description: cleanText(item.vod_content), from: string(item.vod_play_from), play: string(item.vod_play_url) } }), ...(value.sourceWarning ? { warning: cleanText(value.sourceWarning) } : {}) }
 }
 export function episodeGroups(item) {
   const flags = string(item.from).split('$$$')

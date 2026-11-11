@@ -1,4 +1,6 @@
 import { getNativeHost } from '../native-host.js'
+import { JS_SPIDER_HASH } from './js-version.js'
+import { PYTHON_RUNTIME_HASH } from './python-version.js'
 let bridge = null
 let serial = 0
 export function isAndroidTVBox() {
@@ -18,11 +20,13 @@ function nativeBridge() {
   const instance = invoke(type, 'newInstance')
   if (!instance) throw new Error('Android 插件宿主加载失败，请重新编译运行')
   invoke(instance, 'configure', activity, directory)
+  invoke(instance, 'configureJavascript', plus.io.convertLocalFileSystemURL('_www/static/tvbox-js').replace(/^file:\/\//, ''), JS_SPIDER_HASH)
+  invoke(instance, 'configurePython', plus.io.convertLocalFileSystemURL('_www/static/tvbox-python').replace(/^file:\/\//, ''), PYTHON_RUNTIME_HASH)
   bridge = instance
   return bridge
 }
 export function invokeAndroidSpider(site, action, args = {}) {
-  return callNative({ site, action, args }).then(body => ({ body, url: site.jar?.split(';md5;')[0] || '' }))
+  return callNative({ site, action, args }).then(body => ({ body, url: /\.(?:m?js|py)(?:[?#]|$)/i.test(site.api) ? site.api : site.jar?.split(';md5;')[0] || '' }))
 }
 export function requestAndroidTVBox(url, headers = {}) {
   return callNative({ action: 'request', args: { url, headers } }, 'enqueueRequest')
@@ -41,8 +45,9 @@ function callNative(payload, enqueueMethod = 'enqueue') {
         if (raw) {
           const result = JSON.parse(raw)
           if (result.ok) resolve(result.body)
+          else if (payload.action === 'request' && /Connection reset|ECONNRESET|connection abort|unexpected end/i.test(result.error)) reject(new Error('接口连接被重置或中断，可能是网络或线路暂时不稳定，请稍后重试。'))
           else reject(new Error((payload.action === 'request' ? '配置或接口请求失败：' : 'Android 插件执行失败：') + result.error))
-        } else if (Date.now() - started > 60000) reject(new Error(payload.action === 'request' ? '配置或接口请求超时' : 'Android 插件响应超时，请切换站点'))
+        } else if (Date.now() - started > (payload.site?.python ? 240000 : 60000)) reject(new Error(payload.action === 'request' ? '配置或接口请求超时' : 'Android 插件响应超时，请切换站点'))
         else setTimeout(poll, 150)
       } catch (error) { reject(error) }
     }

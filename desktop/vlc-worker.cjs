@@ -2,7 +2,7 @@
 const { parentPort, workerData } = require('node:worker_threads')
 const path = require('node:path')
 const koffi = require('koffi')
-let instance, player, timer, generation = 0, metadata = false, previousState = -1
+let instance, player, timer, generation = 0, metadata = false, previousState = -1, maxPosition = 0, live = false
 try {
   process.env.VLC_PLUGIN_PATH = path.join(workerData.runtime, 'plugins')
   const core = koffi.load(path.join(workerData.runtime, 'libvlccore.dll'))
@@ -36,6 +36,7 @@ try {
     err: bind('libvlc_errmsg', 'str', [])
   }
   const options = ['--no-video-title-show', '--avcodec-hw=any', '--no-stats', '--no-osd', '--no-snapshot-preview']
+  if(workerData.logFile) options.push('--file-logging','--logfile='+workerData.logFile,'--verbose=1')
   instance = api.create(options.length, options)
   if (!instance) throw new Error(api.err() || 'LibVLC 初始化失败')
   player = api.newPlayer(instance)
@@ -43,25 +44,27 @@ try {
   api.hwnd(player, Buffer.from(workerData.hwnd).readBigUInt64LE())
   api.mouse(player, 0); api.keyboard(player, 0)
   const snapshot = () => {
-    const state = api.state(player), time = Math.max(0, Number(api.time(player))) / 1000, duration = Math.max(0, Number(api.length(player))) / 1000
+    const state = api.state(player), time = Math.max(0, Number(api.time(player))) / 1000, duration = live ? 0 : Math.max(0, Number(api.length(player))) / 1000
+    maxPosition=Math.max(maxPosition,time)
     const events = []
-    if (!metadata && duration > 0) { metadata = true; events.push('loadedmetadata') }
+    if (!metadata && state === 3) { metadata = true; events.push('loadedmetadata') }
+    const prematureEnd=state===6 && maxPosition<.25
     if (state !== previousState) {
       if (state === 3) events.push('play', 'playing', 'canplay')
       if (state === 4) events.push('pause')
       if (state === 1 || state === 2) events.push('waiting')
-      if (state === 6) events.push('ended')
+      if (state === 6) events.push(prematureEnd ? 'error':'ended')
       if (state === 7) events.push('error')
       previousState = state
     }
-    parentPort.postMessage({ type: 'state', generation, currentTime: time, duration, paused: state !== 3, state, events, error: state === 7 ? api.err() || 'LibVLC 无法打开此视频，请检查文件或播放地址' : '' })
+    parentPort.postMessage({ type: 'state', generation, currentTime: time, duration, paused: state !== 3, state, events, error: prematureEnd ? '视频尚未开始便中断，请检查播放线路或重试' : state===7 ? 'LibVLC 无法打开视频，请检查文件或播放线路' : '' })
   }
   parentPort.on('message', message => {
     const { id, action, input = {} } = message
     try {
       let result = true
       if (action === 'open') {
-        api.stop(player); generation = input.generation; metadata = false; previousState = -1
+        api.stop(player); generation = input.generation; metadata = false; previousState = -1; maxPosition=0;live=!!input.live
         const media = input.file ? api.path(instance, input.file) : api.location(instance, input.url)
         if (!media) throw new Error(api.err() || '无法打开视频')
         try {
@@ -72,7 +75,7 @@ try {
         api.volume(player,Math.round(input.volume*100)); api.mute(player,input.muted ? 1 : 0); api.rate(player,input.rate)
       } else if (action === 'play') { if (api.play(player) < 0) throw new Error(api.err() || '播放失败') }
       else if (action === 'pause') api.pause(player, 1)
-      else if (action === 'seek') api.seek(player, Math.round(Math.max(0,input.value) * 1000))
+      else if (action === 'seek' && !live) { maxPosition=Math.max(maxPosition,input.value);api.seek(player, Math.round(Math.max(0,input.value) * 1000)) }
       else if (action === 'rate') api.rate(player, input.value)
       else if (action === 'volume') { api.volume(player, Math.round(input.value * 100)); api.mute(player, input.muted ? 1 : 0) }
       else if (action === 'fit') { api.aspect(player, input.fill && input.width > 0 && input.height > 0 ? input.width + ':' + input.height : null); api.scale(player, 0) }

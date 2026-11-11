@@ -2,6 +2,24 @@
 // Users can refresh status manually in Settings; validation does not execute plugins.
 export const TVBOX_RESOURCES = [
   {
+    "name": "创享影视",
+    "url": "https://ys.cxkjg.cn/api/provide/tvbox",
+    "origin": "用户提供",
+    "validation": {
+      "status": "valid",
+      "label": "配置有效",
+      "detail": "12 个站点（HTTP 12 / 插件 0）",
+      "sites": 12,
+      "warehouses": 0,
+      "lives": 0,
+      "httpSites": 12,
+      "pluginSites": 0,
+      "finalUrl": "https://ys.cxkjg.cn/api/provide/tvbox",
+      "checkedAt": 1794217745566,
+      "elapsedMs": 454
+    }
+  },
+  {
     "name": "摸鱼儿",
     "url": "http://www.y456y.com",
     "origin": "用户提供",
@@ -37,24 +55,7 @@ export const TVBOX_RESOURCES = [
       "elapsedMs": 554
     }
   },
-  {
-    "name": "创享影视",
-    "url": "https://ys.cxkjg.cn/api/provide/tvbox",
-    "origin": "用户提供",
-    "validation": {
-      "status": "valid",
-      "label": "配置有效",
-      "detail": "12 个站点（HTTP 12 / 插件 0）",
-      "sites": 12,
-      "warehouses": 0,
-      "lives": 0,
-      "httpSites": 12,
-      "pluginSites": 0,
-      "finalUrl": "https://ys.cxkjg.cn/api/provide/tvbox",
-      "checkedAt": 1794217745566,
-      "elapsedMs": 454
-    }
-  },
+
   {
     "name": "影仓",
     "url": "http://124.71.19.220/c/1",

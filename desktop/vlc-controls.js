@@ -4,13 +4,13 @@ const clock = value => { const s = Math.floor(Math.max(0,value || 0)); return (s
 const command = (action,input) => window.vlc.command(action,input).catch(error => feedback(error.message,5000))
 function feedback(text,delay = 1200) { clearTimeout(statusTimer); $('status').textContent = text; statusTimer = setTimeout(() => { $('status').textContent = '' },delay) }
 function reveal() { visible = true; document.body.classList.remove('idle'); clearTimeout(idleTimer); idleTimer = setTimeout(hide,3000) }
-function hide() { visible = false; document.body.classList.add('idle'); $('menu').hidden = true; clearTimeout(idleTimer) }
+function hide() { if (!$('queue').hidden)return;visible = false; document.body.classList.add('idle'); $('menu').hidden = true; clearTimeout(idleTimer) }
 function lock(value) { locked = value; document.body.classList.toggle('locked',value); $('unlock').hidden = !value; $('seek').disabled = value; $('unlock-thumb').style.transform = ''; reveal() }
-const seek = value => { if (!locked && state.duration > 0) { command('seek',{value:Math.max(0,Math.min(state.duration-.1,value))}); reveal() } }
+const seek = value => { if (!locked && !state.live && state.duration > 0) { command('seek',{value:Math.max(0,Math.min(state.duration-.1,value))}); reveal() } }
 const toggle = () => { if (!locked) { command(state.paused ? 'play':'pause'); reveal() } }
 function volume(value,force = false) { state.volume = Math.max(0,Math.min(1,value)); state.muted = false; $('volume').value = Math.round(state.volume*100); if (force || Date.now()-lastVolumeAt>=80) { lastVolumeAt = Date.now(); command('volume',{value:state.volume,muted:false}) } }
 function light(value) { brightness = Math.max(.05,Math.min(1,value)); $('brightness').style.opacity = 1-brightness; $('light').value = Math.round(brightness*100) }
-for (const [id,action] of [['previous','previous'],['next','next'],['return','close']]) $(id).onclick = () => { if (!locked) command(action) }
+for (const [id,action] of [['previous','previous'],['next','next'],['return','back'],['back-page','back']]) $(id).onclick = () => { if (!locked) command(action) }
 $('play').onclick = toggle; $('back').onclick = () => seek(state.currentTime-10); $('forward').onclick = () => seek(state.currentTime+10)
 $('mute').onclick = () => { state.muted = !state.muted; command('volume',{value:state.volume,muted:state.muted}) }
 $('volume').oninput = event => volume(Number(event.target.value)/100)
@@ -22,6 +22,14 @@ $('fill').onclick = () => command('fit',{fill:!state.fill})
 $('lock').onclick = () => lock(true)
 for (const [id,direction] of [['landscape','landscape'],['portrait','portrait']]) $(id).onclick = () => command('fullscreen',{value:true,direction})
 $('exit').onclick = () => command('fullscreen',{value:false})
+function renderQueue() {
+  const rows=state.queue||[],start=Math.max(0,Math.floor($('queue-items').scrollTop/56)-2),end=Math.min(rows.length,start+12)
+  const fragment=document.createDocumentFragment(),top=document.createElement('div');top.style.height=start*56+'px';fragment.append(top)
+  for(const item of rows.slice(start,end)){const row=document.createElement('button');row.className='queue-row'+(item.id===state.currentId?' current':'');row.textContent=item.title;row.onclick=()=>{if(!locked){command('select',{id:item.id});$('queue').hidden=true;reveal()}};fragment.append(row)}
+  const bottom=document.createElement('div');bottom.style.height=(rows.length-end)*56+'px';fragment.append(bottom);$('queue-items').replaceChildren(fragment)
+}
+$('queue-toggle').onclick=()=>{$('queue').hidden=!$('queue').hidden;if(!$('queue').hidden){const index=(state.queue||[]).findIndex(item=>item.id===state.currentId);$('queue-items').scrollTop=Math.max(0,index-2)*56;renderQueue();clearTimeout(idleTimer)}else reveal()}
+$('queue-close').onclick=()=>{$('queue').hidden=true;reveal()};$('queue-items').onscroll=renderQueue
 $('seek').onpointerdown = () => { dragging = true; clearTimeout(idleTimer) }
 $('seek').oninput = event => { if (!locked) $('current').textContent = clock(state.duration*Number(event.target.value)/10000) }
 $('seek').onchange = event => { dragging = false; seek(state.duration*Number(event.target.value)/10000) }
@@ -36,19 +44,19 @@ $('unlock-thumb').onpointermove = event => {
 function resetUnlock() { unlockGesture = null; $('unlock-thumb').style.transform = ''; reveal() }
 $('unlock-thumb').onpointerup = resetUnlock; $('unlock-thumb').onpointercancel = resetUnlock
 $('stage').addEventListener('click',event => {
-  if (Date.now()<suppressClick || event.target.closest('button,input,select,label,#menu,#unlock')) return
+  if (Date.now()<suppressClick || event.target.closest('button,input,select,label,#menu,#unlock,#queue')) return
   if (visible) hide(); else reveal()
 })
 $('stage').addEventListener('pointermove',event => { if (event.pointerType === 'mouse' && !gesture) reveal() })
 $('stage').addEventListener('pointerdown',event => {
-  if (locked || !state.fullscreen || event.target.closest('button,input,select,label,#menu,#unlock')) return
+  if (locked || event.target.closest('button,input,select,label,#menu,#unlock,#queue')) return
   gesture = { x:event.clientX,y:event.clientY,position:state.currentTime,volume:state.volume,brightness,kind:null,moved:false }
   event.currentTarget.setPointerCapture(event.pointerId); clearTimeout(idleTimer)
 })
 $('stage').addEventListener('pointermove',event => {
   if (!gesture || locked) return
   const dx = event.clientX-gesture.x,dy = gesture.y-event.clientY
-  if (!gesture.kind) { if (Math.max(Math.abs(dx),Math.abs(dy))<10) return; gesture.kind = Math.abs(dx)>Math.abs(dy)*1.2 ? 'seek' : gesture.x<innerWidth/2 ? 'volume':'brightness' }
+  if (!gesture.kind) { if (Math.max(Math.abs(dx),Math.abs(dy))<10) return;if(Math.abs(dx)>Math.abs(dy)*1.2){if(state.live||!(state.duration>0))return;gesture.kind='seek'}else{if(!state.fullscreen)return;gesture.kind=gesture.x<innerWidth/2?'volume':'brightness'} }
   gesture.moved = true; suppressClick = Date.now()+350
   if (gesture.kind === 'seek') { gesture.target = Math.max(0,Math.min(state.duration-.1,gesture.position+dx/innerWidth*Math.min(600,Math.max(60,state.duration)))); feedback('进度 '+clock(gesture.target)) }
   else if (gesture.kind === 'volume') { volume(gesture.volume+dy/innerHeight*1.5); feedback('音量 '+Math.round(state.volume*100)+'%') }
@@ -57,7 +65,7 @@ $('stage').addEventListener('pointermove',event => {
 function endGesture(event) { if (!gesture) return; const moved = gesture.moved; if (event.type!=='pointercancel' && gesture.kind==='seek') seek(gesture.target); if (gesture.kind==='volume') volume(state.volume,true); gesture = null; if (moved) reveal() }
 $('stage').addEventListener('pointerup',endGesture); $('stage').addEventListener('pointercancel',endGesture)
 document.addEventListener('keydown',event => {
-  if (locked || event.target.matches('input,select')) return
+  if (locked || event.target.matches('input,select') && event.code!=='Escape') return
   if (['Space','ArrowLeft','ArrowRight','KeyF','Escape','KeyN','KeyP','ArrowUp','ArrowDown'].includes(event.code)) event.preventDefault()
   if (event.code==='Space') toggle()
   if (event.code==='ArrowLeft') seek(state.currentTime-10)
@@ -65,14 +73,14 @@ document.addEventListener('keydown',event => {
   if (event.code==='ArrowUp') volume(state.volume+.05)
   if (event.code==='ArrowDown') volume(state.volume-.05)
   if (event.code==='KeyF') command('fullscreen',{value:!state.fullscreen})
-  if (event.code==='Escape' && state.fullscreen) command('fullscreen',{value:false})
+  if (event.code==='Escape') {if(!$('queue').hidden){$('queue').hidden=true}else if(state.fullscreen)command('fullscreen',{value:false});else command('back')}
   if (event.code==='KeyN') command('next')
   if (event.code==='KeyP') command('previous')
   reveal()
 })
 window.vlc.onState(update => {
   state = {...state,...update}; $('title').textContent = state.title || '本地影库 · LibVLC'
-  $('play').textContent = state.paused ? '播放':'暂停'; $('duration').textContent = clock(state.duration)
+  $('play').textContent = state.paused ? '播放':'暂停'; $('duration').textContent = state.live ? '直播' : clock(state.duration);$('seek').disabled=locked||!!state.live
   if (!dragging) { $('current').textContent = clock(state.currentTime); $('seek').value = state.duration>0 ? Math.round(state.currentTime/state.duration*10000):0 }
   $('volume').value = Math.round((state.volume ?? 1)*100); $('mute').textContent = state.muted ? '取消静音':'静音'; $('rate').value = state.rate || 1
   $('fill').textContent = state.fill ? '适应屏幕':'满屏观影（不裁切）'; $('exit').hidden = !state.fullscreen
@@ -80,5 +88,6 @@ window.vlc.onState(update => {
   if ((state.events || []).includes('playing')) { clearTimeout(statusTimer); $('status').textContent = '' }
   if ((state.events || []).includes('ended')) feedback('本集播放结束',5000)
   if (state.error) feedback(state.error,8000)
+  if(update.queue || update.currentId && !$('queue').hidden)renderQueue()
 })
 reveal()

@@ -13,7 +13,7 @@ test('Android plugin host passes Application to plugin initialization and never 
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'localvideo-context-'))
   t.after(() => fs.rmSync(work, { recursive: true, force: true }))
   const sources = {
-    'android/content/Context.java': 'package android.content; public abstract class Context { public abstract Context getApplicationContext(); public ClassLoader getClassLoader(){ return getClass().getClassLoader(); } public ContentResolver getContentResolver(){ return null; } public SharedPreferences getSharedPreferences(String name, int mode){ return null; } }',
+    'android/content/Context.java': 'package android.content; public abstract class Context { public abstract Context getApplicationContext(); public ClassLoader getClassLoader(){ return getClass().getClassLoader(); } public ContentResolver getContentResolver(){ return null; } public android.content.res.AssetManager getAssets(){ return null; } public SharedPreferences getSharedPreferences(String name, int mode){ return null; } }',
     'android/app/Application.java': `package android.app; public class Application extends android.content.Context {
       public interface ActivityLifecycleCallbacks {} public interface OnProvideAssistDataListener {}
       public ClassLoader loader; public int registrations; protected void attachBaseContext(android.content.Context base) {}
@@ -64,6 +64,6 @@ public class PluginContextCheck {
     const file = path.join(work, name); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, source); return file
   })
   const run = (exe, args) => { const result = spawnSync(path.join(javaBin, exe), args, { encoding: 'utf8', timeout: 30000, windowsHide: true }); assert.equal(result.status, 0, result.stderr || result.error?.message || result.stdout); return result.stdout }
-  run('javac.exe', ['-encoding', 'UTF-8', '--release', '8', '-classpath', sdk, '-d', work, ...files, ...['Bridge.java', 'HttpTransport.java', 'PluginApplication.java', 'LocalResources.java'].map(name => path.join(root, 'native/tvbox/src/io/localvideo/tvbox', name))])
+  run('javac.exe', ['-encoding', 'UTF-8', '--release', '8', '-classpath', sdk, '-d', work, ...files, ...['Bridge.java', 'HttpTransport.java', 'PluginApplication.java', 'LocalResources.java', 'JsSpider.java', 'SpiderHttp.java', 'PythonRuntime.java', 'PythonSpider.java'].map(name => path.join(root, 'native/tvbox/src/io/localvideo/tvbox', name))])
   assert.match(run('java.exe', ['-cp', work + path.delimiter + sdk, 'PluginContextCheck', path.join(work, 'cache')]), /Application context checks passed/)
 })

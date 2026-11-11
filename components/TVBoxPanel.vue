@@ -14,7 +14,7 @@
           </scroll-view>
         </view>
         <view class="input-row"><view v-if="isLocalAddress" class="local-config-label">{{ localLabel }}</view><input v-else v-model="address" aria-label="TVBox 配置地址" placeholder="输入配置、仓库或影视 API 地址" @confirm="connect()"/><button :disabled="!!busy || localImportBusy" class="primary" @click="connect()">{{ busy === 'config' ? '读取中…' : isLocalAddress ? '重新加载' : '导入配置' }}</button></view>
-        <text class="hint">{{ androidPlugins ? '支持 Android CSP/JAR 插件、HTTP 接口及直播列表，插件兼容性需逐站点验证。' : '支持 XML / JSON、Type 4 HTTP 接口及直播列表。Windows 版独立运行，无需安卓环境；Android JAR / DEX 插件仅限安卓 App 使用。' }}</text>
+        <text class="hint">{{ androidPlugins ? '支持 Android CSP/JAR、JS/drpy、Python 3 Spider、HTTP 接口及直播列表。Python 引擎首次使用时下载并缓存；特殊依赖需单独适配。' : '支持 XML / JSON、Type 4 HTTP 接口及直播列表。Windows 版独立运行，无需安卓环境；CSP/JAR、JS 和 Python Spider 目前仅限安卓 App 使用。' }}</text>
         <text v-if="config" class="summary">{{ config.sites.length }} 个站点 · {{ config.lives.length }} 组直播 · {{ warehouses.length }} 个仓库配置</text>
         <text v-if="saved && addressIdentity(address) === addressIdentity(savedAddress)" class="saved">配置已保存在本机，返回 TVBox 即可浏览片单</text>
         <text v-else-if="address" class="hint">点击“导入配置”后应用这个地址。</text>
@@ -39,12 +39,12 @@
         </view>
       </view>
       <view v-if="!detail" class="library-heading"><view><text class="kicker">ONLINE CINEMA</text><text class="title">TVBox 片单</text></view></view>
-      <view v-if="error" class="error" role="alert">{{ error }}</view>
+      <view v-if="error" class="error" role="alert"><text>{{ error }}</text><button v-if="!busy && !detail && !liveMode && site?.supported" @click="loadPage(page)">重试</button></view>
       <view v-if="config && (site || liveMode)" class="box-layout">
       <view class="content panel">
         <view v-if="site && !site.supported && !liveMode" class="empty"><text class="empty-title">这个站点需要专用插件</text><text>{{ site.reason }}</text><text class="hint">配置已经读到，但此站点不能直接用于本版。请选择 XML、JSON、Type 4 HTTP 接口或直播列表。</text></view>
         <template v-else-if="detail">
-          <view class="detail-head"><image v-if="detail.pic" :src="artwork(detail.pic, detail.picHeaders)" mode="aspectFill"/><view><text class="detail-title">{{ detail.name }}</text><text class="hint">{{ detail.remarks }}</text><text class="description">{{ detail.description || '暂无简介' }}</text></view></view>
+          <view class="detail-head"><image v-if="detail.pic && !posterFailures[detail.pic]" :src="artwork(detail.pic, detail.picHeaders)" mode="aspectFill" @error="posterFailures[detail.pic] = true"/><view v-else-if="detail.pic" class="poster-empty detail-poster"><text>封面暂不可用</text></view><view><text class="detail-title">{{ detail.name }}</text><text class="hint">{{ detail.remarks }}</text><text class="description">{{ detail.description || '暂无简介' }}</text></view></view>
           <view class="chips"><button v-for="(group, index) in groups" :key="index" :class="{ active: groupIndex === index }" @click="groupIndex = index">{{ group.name }}</button></view>
           <text v-if="!groups.length" class="hint">此详情没有返回可用的播放列表。</text>
           <view class="episodes"><button v-for="(episode, index) in groups[groupIndex]?.episodes || []" :key="index" :disabled="!!busy" @click="playEpisode(index)">{{ episode.name }}</button></view>
@@ -53,8 +53,8 @@
           <view class="section-head"><text class="section-label">{{ liveMode ? '直播频道' : site?.name || '请选择一个站点' }}</text><text v-if="busy" class="hint">{{ busy === 'play' ? '解析播放地址…' : '正在加载…' }}</text></view>
           <view v-if="site && !liveMode" class="input-row search"><input v-model="keyword" aria-label="搜索影片" placeholder="搜索这个站点的影片" @confirm="search"/><button :disabled="!!busy || !site.searchable" @click="search">搜索</button></view>
           <view class="chips"><button v-for="category in categories" :key="category.id" :class="{ active: categoryId === category.id }" :disabled="!!busy" @click="chooseCategory(category.id)">{{ category.name }}</button></view>
-          <view v-if="!items.length && !busy" class="empty">{{ site || liveMode ? '暂无内容，请选择分类或尝试搜索。' : '导入后选择右上角站点开始浏览。' }}</view>
-          <view class="cards"><button v-for="(item, index) in items" :key="item.id" class="card" :disabled="!!busy" @click="liveMode ? playChannel(index) : openDetail(item)"><image v-if="item.pic" :src="artwork(item.pic, item.picHeaders)" mode="aspectFill"/><view v-else class="poster-empty">{{ liveMode ? 'LIVE' : 'CINEMA' }}</view><text class="card-name">{{ item.name }}</text><text class="hint">{{ item.remarks }}</text></button></view>
+          <view v-if="!items.length && !busy && !error" class="empty">{{ site || liveMode ? '暂无内容，请选择分类或尝试搜索。' : '导入后选择右上角站点开始浏览。' }}</view>
+          <view class="cards"><button v-for="(item, index) in items" :key="item.id" class="card" :disabled="!!busy" @click="liveMode ? playChannel(index) : openDetail(item)"><image v-if="item.pic && !posterFailures[item.pic]" :src="artwork(item.pic, item.picHeaders)" mode="aspectFill" @error="posterFailures[item.pic] = true"/><view v-else-if="item.pic" class="poster-empty poster-unavailable"><text>封面暂不可用</text></view><view v-else class="poster-empty">{{ liveMode ? 'LIVE' : 'CINEMA' }}</view><text class="card-name">{{ item.name }}</text><text class="hint">{{ item.remarks }}</text></button></view>
           <view v-if="!liveMode && (page > 1 || items.length)" class="paging"><button :disabled="!!busy || page <= 1" @click="loadPage(page - 1)">上一页</button><text>{{ page }} / {{ pages }}</text><button :disabled="!!busy || page >= pages" @click="loadPage(page + 1)">下一页</button></view>
         </template>
       </view>
@@ -147,6 +147,14 @@ const backSwipe = createSwipeBack({ canGoBack: () => props.mode !== 'settings' &
 defineExpose({ handleBack })
 onMounted(async () => {
   try {
+    // Discard only the removed built-in resource; preserve other configurations.
+    const removed = 'builtin:tvbox/kuaikan'
+    const previous = uni.getStorageSync(KEY)
+    if (previous?.url === removed || previous?.resourceUrl === removed) {
+      uni.removeStorageSync(KEY); uni.removeStorageSync(KEY + '_warehouses')
+    }
+    if (uni.getStorageSync(KEY + '_input') === removed) uni.removeStorageSync(KEY + '_input')
+    if (uni.getStorageSync(KEY + '_draft')?.value === removed) uni.removeStorageSync(KEY + '_draft')
     const stored = uni.getStorageSync(KEY)
     const draft = uni.getStorageSync(KEY + '_draft')
     selections = readSelections(uni.getStorageSync(KEY + '_selection_v1'))
@@ -215,6 +223,7 @@ async function selectWarehouse(entry) {
   if (await connect(true) && alive) restoreSource()
 }
 const artwork = (url, headers = {}) => tvboxMediaUrl(url, { ...site.value?.headers, ...headers }, localOrigin(config.value?.url))
+const posterFailures = ref({})
 async function loadLocalFolder() {
   if (localImportBusy.value || busy.value) return
   localImportBusy.value = true; error.value = ''
@@ -242,7 +251,7 @@ async function run(kind, action) {
   try { await action(() => ticket === generation) } catch (e) { if (ticket === generation) error.value = e.message || '请求失败' }
   finally { if (ticket === generation) busy.value = '' }
 }
-function resetResults() { detail.value = null; items.value = []; categories.value = []; categoryId.value = ''; page.value = 1; pages.value = 1; keyword.value = ''; requestMode = 'home' }
+function resetResults() { detail.value = null; items.value = []; categories.value = []; categoryId.value = ''; page.value = 1; pages.value = 1; keyword.value = ''; requestMode = 'home'; posterFailures.value = {} }
 async function connect(fromWarehouse = false) {
   const url = httpUrl(address.value)
   if (!url) { error.value = '请输入完整的 http:// 或 https:// 配置地址'; return }
@@ -281,7 +290,8 @@ async function loadPage(target) {
     const response = await requestTVBoxSite(selected, requestMode, { id: categoryId.value, keyword: searchWord, page: target }, config.value.url)
     const result = normalizeResponse(response.body, response.url)
     if (!current()) return
-    items.value = result.items; page.value = target; pages.value = Math.max(target, result.pages)
+    items.value = result.items; page.value = target; pages.value = Math.max(target, result.pages); posterFailures.value = {}
+    if (result.warning) error.value = result.warning
     if (result.categories.length) categories.value = result.categories
   })
 }
@@ -339,5 +349,6 @@ async function playChannel(index) {
 .site-dropdown{margin-left:auto}
 .local-config-dropdown{position:relative;margin-bottom:16px}.box-page .local-config-select{display:flex;justify-content:space-between;gap:12px;width:100%;text-align:left;margin-top:8px}.local-menu-backdrop{position:fixed;inset:0;z-index:30}.local-config-dropdown .local-config-list{position:absolute;top:100%;left:0;width:100%;z-index:31;background:#172322;border:1px solid #3c5149;border-radius:12px;box-shadow:0 18px 45px #0009;box-sizing:border-box}.local-config-dropdown .local-config-list button{border:0;border-radius:0;margin:0}.local-config-dropdown .local-selected{background:#30412b}
 .subpage-mode{touch-action:pan-y}
+.poster-unavailable,.detail-poster{font-size:13px;letter-spacing:0}.detail-poster{width:140px;height:200px;flex-shrink:0;border-radius:12px}@media(max-width:700px){.detail-poster{width:100px;height:145px}}
 .local-config-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:12px 0 16px}.local-config-actions .hint{margin:0}.local-config-label{flex:1;min-width:0;padding:14px;border:1px solid #344342;border-radius:12px;font-size:13px;overflow-wrap:anywhere}.local-config-list{height:340px;max-height:55vh}.local-config-list button{width:100%;text-align:left;margin:0 0 8px;white-space:normal;overflow-wrap:anywhere}.local-config-list .local-selected{border-color:#dafa6b;color:#dafa6b}
 </style>

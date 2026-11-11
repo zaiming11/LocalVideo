@@ -15,10 +15,6 @@
 		<view class="player-ambient" :style="{ backgroundImage: current?.thumb ? `url('${current.thumb}')` : 'none' }" />
 		<view class="player-ambient-mask" />
 		<view ref="videoHostRef" class="h5-video-host" v-html="videoMarkup" @touchstart.stop />
-		<view v-if="isDesktopVlc && !errorMessage" class="desktop-vlc-launch" @click.stop="focusDesktopPlayer">
-			<AppIcon name="play" :size="30" color="#E8FF63" />
-			<text>正在使用 LibVLC 原生播放窗口</text><text class="desktop-vlc-action">点击返回播放窗口</text>
-		</view>
 
 		<view class="player-top-gradient" :class="{ 'is-visible': showControls }" />
 		<view class="player-bottom-gradient" :class="{ 'is-visible': showControls }" />
@@ -741,7 +737,7 @@ onLoad((options = {}) => {
 onMounted(() => {
 	// #ifdef H5
 	nextTick(() => {
-		videoEl = isDesktopVlc ? createDesktopVlc({ title: () => current.value?.title, fill: () => state.settings.fullscreenFill, onNext: switchToNext, onPrevious: switchToPrev, onFitChange: value => setSetting('fullscreenFill', value), onRateChange: value => { rate.value = value } }) : document.getElementById('h5-video')
+		videoEl = isDesktopVlc ? createDesktopVlc({ title: () => current.value?.title, fill: () => state.settings.fullscreenFill, onNext: switchToNext, onPrevious: switchToPrev, onBack: goBack, onSelect: switchTo, queue: () => queueVideos.value.map(item=>({id:item.id,title:item.title})), currentId: () => currentId.value, isLive: () => isLiveVideo.value, onFitChange: value => setSetting('fullscreenFill', value), onRateChange: value => { rate.value = value } }) : document.getElementById('h5-video')
 		if (!videoEl) {
 			setTimeout(() => {
 				videoEl = document.getElementById('h5-video')
@@ -1805,12 +1801,9 @@ function cleanup() {
 	// #endif
 }
 
-function focusDesktopPlayer() { videoEl?.focus?.() }
 </script>
 
 <style scoped>
-.desktop-vlc-launch { position:absolute;inset:28% 15%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#f5f7f2;cursor:pointer;z-index:2;text-align:center; }
-.desktop-vlc-action { color:#e8ff63;font-size:13px; }
 .control-orientation-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:42px;padding:3px 5px;color:#f5f7f2;font-size:9px;white-space:nowrap}
 /* ============================== shared ============================== */
 .primary-btn {

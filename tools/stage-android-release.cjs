@@ -6,7 +6,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'u
 const stage = path.join(root, '.backup', `android-release-${manifest.versionName}-${Date.now()}`)
 fs.mkdirSync(stage, { recursive: true })
 for (const folder of ['common', 'components', 'core', 'pages', 'static']) {
-  fs.cpSync(path.join(root, folder), path.join(stage, folder), { recursive: true, filter: source => !source.includes(path.join('vlc-native', 'armeabi-v7a')) })
+  fs.cpSync(path.join(root, folder), path.join(stage, folder), { recursive: true, filter: source => !source.split(path.sep).includes('armeabi-v7a') })
 }
 for (const name of ['App.vue', 'main.js', 'index.html', 'manifest.json', 'pages.json', 'uni.scss', 'uni.promisify.adaptor.js']) fs.copyFileSync(path.join(root, name), path.join(stage, name))
 fs.writeFileSync(path.join(stage, 'vite.config.js'), "import { defineConfig } from 'vite'\nimport uni from '@dcloudio/vite-plugin-uni'\nexport default defineConfig({ plugins: [uni()] })\n")

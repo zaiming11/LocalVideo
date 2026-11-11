@@ -18,6 +18,8 @@ const artifacts = [
 ]
 function run(command, args) { const r = spawnSync(command, args, { stdio: 'inherit' }); if (r.error) throw r.error; if (r.status) throw new Error('Native bridge compilation failed') }
 async function main() {
+  run(process.execPath, [path.join(__dirname,'build-tvbox-js.cjs')])
+  run(process.execPath, [path.join(__dirname,'build-tvbox-python.cjs')])
   fs.mkdirSync(cache, { recursive: true })
   const androidJar = path.join(cache, 'android35.jar')
   if (!fs.existsSync(androidJar)) {

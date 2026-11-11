@@ -17,6 +17,19 @@ public final class HttpTransport {
             && (a.getPort() == -1 ? a.getDefaultPort() : a.getPort()) == (b.getPort() == -1 ? b.getDefaultPort() : b.getPort());
     }
     public static Result get(String address, Map<String,String> suppliedHeaders) throws Exception {
+        long started=System.nanoTime();
+        try{return getOnce(address,suppliedHeaders);}
+        catch(IOException error){
+            if(!retryable(error)||System.nanoTime()-started>8000000000L)throw error;
+            try{Thread.sleep(250);}catch(InterruptedException interrupted){Thread.currentThread().interrupt();throw error;}
+            return getOnce(address,suppliedHeaders);
+        }
+    }
+    static boolean retryable(IOException error){
+        String message=String.valueOf(error.getMessage()).toLowerCase(Locale.ROOT);
+        return error instanceof EOFException||error instanceof SocketException&&(message.contains("reset")||message.contains("abort")||message.contains("broken pipe"));
+    }
+    private static Result getOnce(String address, Map<String,String> suppliedHeaders) throws Exception {
         URL current = new URL(address);
         Map<String,String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         headers.put("User-Agent", "okhttp/3.12.13"); headers.put("Accept-Encoding", "gzip");

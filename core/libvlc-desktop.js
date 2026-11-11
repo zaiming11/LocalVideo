@@ -1,5 +1,5 @@
 // HTML media event contract lets history, TVBox resolution and queue logic stay shared.
-export function createDesktopVlc({ title, fill, onNext, onPrevious, onFitChange, onRateChange }) {
+export function createDesktopVlc({ title, fill, onNext, onPrevious, onFitChange, onRateChange, onBack, onSelect, queue, currentId, isLive }) {
   const bridge = window.localVideoDesktop
   const listeners = new Map()
   let source = '', openedSource = '', generation = 0, disposed = false, opening, volume = 1, muted = false, rate = 1
@@ -11,7 +11,7 @@ export function createDesktopVlc({ title, fill, onNext, onPrevious, onFitChange,
     addEventListener(type, callback) { if (!listeners.has(type)) listeners.set(type,new Set()); listeners.get(type).add(callback) },
     removeEventListener(type, callback) { listeners.get(type)?.delete(callback) },
     get src() { return source }, set src(value) { source = value },
-    removeAttribute(name) { if (name === 'src') source = '' },
+    removeAttribute(name) { if (name === 'src') { source = '';openedSource='';generation++;safeCommand('visible',{value:false}) } },
     get currentTime() { return this.currentTimeValue }, set currentTime(value) { this.currentTimeValue = value; safeCommand('seek',{value}); emit('timeupdate') },
     get volume() { return volume }, set volume(value) { volume = value; if (openedSource) safeCommand('volume',{value,muted}); emit('volumechange') },
     get muted() { return muted }, set muted(value) { muted = !!value; if (openedSource) safeCommand('volume',{value:volume,muted}); emit('volumechange') },
@@ -22,7 +22,7 @@ export function createDesktopVlc({ title, fill, onNext, onPrevious, onFitChange,
       if (source !== openedSource) {
         const src = source, ticket = ++generation
         openedSource = src; this.error = null
-        opening = bridge.vlcOpen({ src, generation:ticket, title:title(), fill:fill(), volume, muted, rate })
+        opening = bridge.vlcOpen({ src, generation:ticket, title:title(), fill:fill(), volume, muted, rate,queue:queue?.(),currentId:currentId?.(),live:!!isLive?.() })
         try { await opening } catch (error) { if (ticket === generation && !disposed) { openedSource = ''; this.error = {code:4,message:error.message}; emit('error') } throw error }
         if (ticket !== generation || disposed) return
         await bridge.vlcCommand('volume',{value:volume,muted}); await bridge.vlcCommand('rate',{value:rate})
@@ -38,14 +38,16 @@ export function createDesktopVlc({ title, fill, onNext, onPrevious, onFitChange,
     if (disposed) return
     if (state.type === 'next') { onNext(); return }
     if (state.type === 'previous') { onPrevious(); return }
+    if (state.type === 'back') { onBack?.(); return }
+    if (state.type === 'select') { onSelect?.(state.id); return }
     if (state.type === 'closed') { adapter.paused = true; openedSource = ''; emit('pause'); return }
-    if (state.type === 'error') { adapter.error = {code:4,message:state.error}; emit('error'); return }
+    if (state.type === 'error') { bridge.vlcCommand('visible',{value:false}).catch(()=>{});adapter.error = {code:4,message:state.error}; emit('error'); return }
     if (state.generation !== generation) return
     adapter.currentTimeValue = state.currentTime; adapter.duration = state.duration; adapter.paused = state.paused
     if (typeof state.volume === 'number' && (volume !== state.volume || muted !== !!state.muted)) { volume = state.volume; muted = !!state.muted; emit('volumechange') }
     if (typeof state.rate === 'number' && rate !== state.rate) { rate = state.rate; onRateChange?.(rate) }
     if (typeof state.fill === 'boolean' && state.fill !== fill()) onFitChange?.(state.fill)
-    if (state.error) adapter.error = {code:4,message:state.error}
+    if (state.error) {bridge.vlcCommand('visible',{value:false}).catch(()=>{});adapter.error = {code:4,message:state.error}}
     for (const type of state.events || []) emit(type)
     emit('timeupdate')
   })

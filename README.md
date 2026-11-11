@@ -8,10 +8,10 @@
 
 | 平台 | GitHub 下载 | 加速镜像下载 | 版本 | 使用方式 |
 | --- | --- | --- | --- | --- |
-| Windows 10/11 · 64 位 | [安装版 EXE](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.5-android-1.0.5/LocalVideo-1.1.0-alpha.5-Windows-x64-Setup.exe) | [镜像下载 EXE](https://gh-proxy.com/https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.5-android-1.0.5/LocalVideo-1.1.0-alpha.5-Windows-x64-Setup.exe) | 1.1.0-alpha.5 | 安装后从桌面或开始菜单打开 |
-| Android 6.0 及以上 · ARM64 | [Android APK](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.5-android-1.0.5/LocalVideo-1.0.5-Android.apk) | [镜像下载 APK](https://gh-proxy.com/https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.5-android-1.0.5/LocalVideo-1.0.5-Android.apk) | 1.0.5 | 在手机上打开 APK 并安装 |
+| Windows 10/11 · 64 位 | [安装版 EXE](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.6-android-1.0.6/LocalVideo-1.1.0-alpha.6-Windows-x64-Setup.exe) | [镜像下载 EXE](https://gh-proxy.com/https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.6-android-1.0.6/LocalVideo-1.1.0-alpha.6-Windows-x64-Setup.exe) | 1.1.0-alpha.6 | 安装后从桌面或开始菜单打开 |
+| Android 6.0 及以上 · ARM64 | [Android APK](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.6-android-1.0.6/LocalVideo-1.0.6-Android.apk) | [镜像下载 APK](https://gh-proxy.com/https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.6-android-1.0.6/LocalVideo-1.0.6-Android.apk) | 1.0.6 | 在手机上打开 APK 并安装 |
 
-[查看全部版本与更新说明](https://github.com/zaiming11/LocalVideo/releases) · [下载 SHA-256 校验文件](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.5-android-1.0.5/SHA256SUMS.txt)
+[查看全部版本与更新说明](https://github.com/zaiming11/LocalVideo/releases) · [下载 SHA-256 校验文件](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.6-android-1.0.6/SHA256SUMS.txt)
 
 GitHub 无法访问时可尝试加速镜像。镜像由第三方提供，同步可能延迟；应用内支持自动加速、GitHub 直连和自定义镜像。Windows 当前为测试版，欢迎反馈使用问题。
 
@@ -32,7 +32,7 @@ Android 版扫描手机视频时需要视频访问权限，也可以选择文件
 
 项目使用 **Vue 3 + uni-app**，Windows 版通过 **Electron** 封装。
 
-当前开发代码已接入 Android 与 Windows **LibVLC** 播放器，Windows 使用内置运行库的原生播放窗口；浏览器预览保留 HTML5。原生依赖准备、打包说明和源码链接见 [LibVLC 接入说明](docs/libvlc.md)。
+当前开发代码已接入 Android 与 Windows **LibVLC** 播放器，Windows 使用内置运行库并嵌入主窗口播放；浏览器预览保留 HTML5。原生依赖准备、打包说明和源码链接见 [LibVLC 接入说明](docs/libvlc.md)。
 
 ```text
 components/    通用界面组件

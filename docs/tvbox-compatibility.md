@@ -6,9 +6,9 @@
 
 - Windows 最新方案（1.1.0-alpha.3）：原生桌面端独立运行，支持 XML / JSON、Type 4 HTTP 接口、直播列表及本地视频。安装包不包含安卓环境或引擎 APK，应用不调用模拟器或 ADB，也不依赖手机。此决定替代之前的配套安卓环境方案。
 - Android CSP/JAR/DEX 站点在 Windows 中标记为不兼容，不启动外部环境；请选择 PC 兼容的 HTTP 接口源。旧配置会按当前平台重新判断兼容性，原有本地媒体库和更新设置保留。
-- Android App：在本机加载 CSP/JAR 插件。宿主包含 Spider API、异步调用、DEX 加载、MD5 校验、ARM 库提取和本机媒体代理。
+- Android App：在本机加载 CSP/JAR、JS Spider（含 drpy）和 Python 3 Spider。JAR 宿主包含 Spider API、异步调用、DEX 加载、MD5 校验、ARM 库提取和本机媒体代理；JS 在独立隐藏 WebView 中执行 ES 模块；Python 使用按需下载并校验的原生 CPython 3.11，支持标准 TVBox Python Spider 接口。
 - 插件仅在用户配置选中的站点被使用时下载，不把第三方 Spider 打进安装包。依赖及许可证位于 static/tvbox-native。
-- 不能把“可尝试连接”理解为已验证完整兼容；JS Spider、网页嗅探、QuickJS/Sardine 相关依赖尚未完整接入。
+- 不能把“可尝试连接”理解为已验证完整兼容。JS Spider 使用 Android System WebView，不包含 QuickJS/Sardine 原生运行库；Python 的特殊二进制扩展及网页嗅探仍需额外适配。格式与实测边界见 [Android JS Spider](android-js-spider.md) 和 [Android Python Spider](android-python-spider.md)。
 
 ## 首页与设置
 
@@ -32,6 +32,12 @@
 
 截图中的分类和页码正常、片单空白，是桌面渲染过程中两个异常导致：沙箱 preload 没有全局 Buffer；Vue 响应式请求头也不能直接通过 Electron contextBridge 克隆。现使用 TextEncoder/btoa 编码媒体代理地址，并将请求头复制为普通对象后传入桥接。
 新增两项回归测试，分别覆盖无全局 Buffer 的沙箱和响应式请求头跨桥接。另使用实际打包的 preload、页面和媒体代理模块加载创享影视配置，确认返回 20 张影片卡片及海报，不再出现上述渲染异常。Android 1.0.2 / versionCode 102 已用原云端证书构建，包名及签名保持一致。
+
+### 2026-11-11 片单与图片连接中断
+
+针对 `xgg.json` 中 HTTP 站点的浏览器反馈，实际读取到 20 条影片，其中 19 条包含图片地址；图片域名 `1028.slp261028.top` 在直接请求和附带 Referer 时均复现连接重置。未据此认定源永久失效，也未确认线上海报恢复。
+
+浏览器开发代理和 Windows 共用的网络模块现对连接重置、响应意外中断等短暂错误最多重试一次，第一次失败超过 8 秒或请求已取消时不重试；403/404 和证书错误不重试。配置读取覆盖正文中断；媒体代理仅在返回响应流前重试，保留请求头、源 URL 和 Range 行为。封面最终失败时显示占位，不提供图片点击重试；重新成功读取片单后会重新尝试加载图片。片单的手动重试入口保留。
 
 ### Windows 独立版 1.1.0-alpha.3
 

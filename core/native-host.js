@@ -1,5 +1,6 @@
 // #ifdef APP-PLUS
 import { NATIVE_BRIDGE_HASH } from './tvbox/native-version.js'
+import { PYTHON_RUNTIME_HASH } from './tvbox/python-version.js'
 // #endif
 let cached
 export function nativeInvoke(object, method, ...args) { return plus.android.invoke(object, method, ...args) }
@@ -25,7 +26,9 @@ export function getNativeHost() {
     } finally { invoke(input, 'close'); invoke(output, 'close'); if (!complete) invoke(file, 'delete') }
     if (!invoke(file, 'setReadOnly')) throw new Error('无法设置原生组件只读权限')
   }
-  const loader = plus.android.newObject('dalvik.system.DexClassLoader', destination, directory, null, invoke(activity, 'getClassLoader'))
+  const pythonLibraries = directory + '/python-' + PYTHON_RUNTIME_HASH.slice(0,16) + '/jniLibs/' + (invoke('android.os.Process','is64Bit') ? 'arm64-v8a' : 'armeabi-v7a')
+  invoke(plus.android.newObject('java.io.File', pythonLibraries), 'mkdirs')
+  const loader = plus.android.newObject('dalvik.system.DexClassLoader', destination, directory, pythonLibraries, invoke(activity, 'getClassLoader'))
   cached = { loader, directory, activity }
   return cached
 }
