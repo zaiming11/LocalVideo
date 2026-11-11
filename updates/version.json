@@ -1,23 +1,23 @@
 {
   "schemaVersion": 1,
-  "publishedAt": "2026-11-11T05:00:27.816Z",
+  "publishedAt": "2026-11-11T06:13:08.578Z",
   "platforms": {
     "windows": {
-      "version": "1.1.0-alpha.6",
-      "file": "LocalVideo-1.1.0-alpha.6-Windows-x64-Setup.exe",
-      "size": 162899968,
-      "sha256": "e526934ea3effe1f489a1a8a95961f56e295b255691c244ec307b04610f84205",
-      "downloadUrl": "https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.6-android-1.0.6/LocalVideo-1.1.0-alpha.6-Windows-x64-Setup.exe",
-      "notes": "视频与控制层嵌入主窗口，修复退出全屏后的控制层尺寸，并改进 HLS Range 响应与分片地址重写。"
+      "version": "1.1.0-alpha.7",
+      "file": "LocalVideo-1.1.0-alpha.7-Windows-x64-Setup.exe",
+      "size": 162899130,
+      "sha256": "cbade2e4640f2c2781022c76e359ff7a24e327586437421f1e9ace75b4717687",
+      "downloadUrl": "https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.7-android-1.0.7/LocalVideo-1.1.0-alpha.7-Windows-x64-Setup.exe",
+      "notes": "同步更新版本清单解析兼容处理，保留镜像、文件大小与 SHA-256 校验。"
     },
     "android": {
-      "version": "1.0.6",
-      "file": "LocalVideo-1.0.6-Android.apk",
-      "size": 47173997,
-      "sha256": "08494f0a71959afd3a4c0368e6f7e96d1a64129f69a8c796e1d31f58610e48a8",
-      "versionCode": 106,
-      "downloadUrl": "https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.6-android-1.0.6/LocalVideo-1.0.6-Android.apk",
-      "notes": "新增 JS/drpy 与 Python 3 Spider，改进短暂连接中断重试和片单错误提示。Python 功能需要 Android 7.0+，首次使用会下载并校验运行时。"
+      "version": "1.0.7",
+      "file": "LocalVideo-1.0.7-Android.apk",
+      "size": 47174028,
+      "sha256": "b6680a97a9d3e37d403a603fe72c0b3a00243d23f5f11f2b520b3ab8873865b5",
+      "versionCode": 107,
+      "downloadUrl": "https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.7-android-1.0.7/LocalVideo-1.0.7-Android.apk",
+      "notes": "修复检查更新依赖全局 URL 接口的兼容问题。旧版若不能检查更新，请先手动覆盖安装本版。现有 GitHub/镜像渠道仍可能缓慢，Netlify 尚未配置。"
     }
   }
 }
