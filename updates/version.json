@@ -1,23 +1,23 @@
 {
   "schemaVersion": 1,
-  "publishedAt": "2026-11-11T06:13:08.578Z",
+  "publishedAt": "2026-11-11T07:35:43.184Z",
   "platforms": {
     "windows": {
-      "version": "1.1.0-alpha.7",
-      "file": "LocalVideo-1.1.0-alpha.7-Windows-x64-Setup.exe",
-      "size": 162899130,
-      "sha256": "cbade2e4640f2c2781022c76e359ff7a24e327586437421f1e9ace75b4717687",
-      "downloadUrl": "https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.7-android-1.0.7/LocalVideo-1.1.0-alpha.7-Windows-x64-Setup.exe",
-      "notes": "同步更新版本清单解析兼容处理，保留镜像、文件大小与 SHA-256 校验。"
+      "version": "1.1.0-alpha.8",
+      "file": "LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe",
+      "size": 162899795,
+      "sha256": "74fbfce1bd2086909d60795bae0d7a58bb75c42c97c0fe43fd87fa0fe2aa982d",
+      "downloadUrl": "https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.8-android-1.0.8/LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe",
+      "notes": "默认通过 Netlify 检查和下载安装包，可在设置中切换 GitHub。Windows 更新包自动合并后安装。"
     },
     "android": {
-      "version": "1.0.7",
-      "file": "LocalVideo-1.0.7-Android.apk",
-      "size": 47174028,
-      "sha256": "b6680a97a9d3e37d403a603fe72c0b3a00243d23f5f11f2b520b3ab8873865b5",
-      "versionCode": 107,
-      "downloadUrl": "https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.7-android-1.0.7/LocalVideo-1.0.7-Android.apk",
-      "notes": "修复检查更新依赖全局 URL 接口的兼容问题。旧版若不能检查更新，请先手动覆盖安装本版。现有 GitHub/镜像渠道仍可能缓慢，Netlify 尚未配置。"
+      "version": "1.0.8",
+      "file": "LocalVideo-1.0.8-Android.apk",
+      "size": 47174571,
+      "sha256": "6de3714ff181a4b68c72c0a9f954f1a9c5338c87b0fb67f8cb56ce6ae0ad343f",
+      "versionCode": 108,
+      "downloadUrl": "https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.8-android-1.0.8/LocalVideo-1.0.8-Android.apk",
+      "notes": "默认通过 Netlify 检查和下载 APK，可切换 GitHub，保留无全局 URL 接口的检查更新兼容修复。旧版需先手动覆盖安装本版。"
     }
   }
 }
