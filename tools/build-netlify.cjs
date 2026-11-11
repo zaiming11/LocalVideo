@@ -22,4 +22,6 @@ for (const name of ['vlc-native', 'tvbox-native', 'tvbox-js', 'tvbox-python']) {
 const updates = spawnSync(process.execPath, [path.join(__dirname, 'prepare-netlify-updates.cjs'), '--publish-dir', output], { cwd: root, stdio: 'inherit' })
 if (updates.error) throw updates.error
 if (updates.status) process.exit(updates.status)
+const manifest = JSON.parse(fs.readFileSync(path.join(root, 'updates/version.json'), 'utf8'))
+fs.copyFileSync(path.join(root, 'desktop/.update-publish', manifest.platforms.windows.file), path.join(output, 'LocalVideo.exe'))
 console.log('Netlify web build ready: ' + output)

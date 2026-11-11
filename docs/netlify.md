@@ -32,6 +32,8 @@ netlify deploy --site e689e3e5-508c-40da-a3ef-cf4a189a6538 --no-build --prod
 
 `tools/build-netlify.cjs` 会自动执行此准备步骤，并将当前清单及对应文件复制到发布目录的 `updates/`。因此在新电脑上部署时，需要先准备与原始版本记录匹配的安装包；缺失或哈希不符会阻止构建完成，避免发布不完整清单。版本清单设置为不缓存，安装包使用带版本号的文件名。
 
+手工下载安装支持完整 Windows EXE：[LocalVideo.exe（Netlify 直接下载）](https://localcinema-zaiming11.netlify.app/LocalVideo.exe)。构建脚本将当前清单对应的完整 Setup EXE 另存为站点根目录的 `LocalVideo.exe`，与 Android APK 一样点击链接即可下载；应用内仍使用原有分片更新。每次部署替换为当前版本，直链设置附件下载和不缓存。README 与当前 GitHub Release 同时提供此入口及 GitHub 备用链接。
+
 初次接入时仅同步了已有 Windows `1.1.0-alpha.7`、Android `1.0.7`，当时的二进制不包含双更新来源界面。当前发布流程已提高版本并重新打包；包含新代码的安装包默认使用 Netlify，并可切换 GitHub。旧客户端不会因网页发布而自动获得新代码，需先覆盖安装新版。
 
 下次发布包含双渠道功能的安装包时，应先提高 Windows 的 `desktop/package.json` 版本、Android 的 `manifest.json` 版本与 `versionCode`，完成两端打包，再用 `tools/prepare-updates.cjs` 生成真实安装包记录，然后运行 Netlify 构建/部署。不要仅提高线上清单版本而继续指向旧二进制。

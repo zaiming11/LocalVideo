@@ -6,6 +6,14 @@
   node_bundler = "esbuild"
 
 [[headers]]
+  for = "/LocalVideo.exe"
+  [headers.values]
+    Content-Type = "application/octet-stream"
+    Content-Disposition = 'attachment; filename="LocalVideo.exe"'
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    Netlify-CDN-Cache-Control = "no-store"
+
+[[headers]]
   for = "/updates/version.json"
   [headers.values]
     Cache-Control = "no-store, no-cache, must-revalidate"

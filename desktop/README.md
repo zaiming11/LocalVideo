@@ -2,7 +2,9 @@
 
 适用于 Windows 10/11 64 位，无需 HBuilderX、Node.js 或本地预览服务。当前开发版 1.1.0-alpha.3 也无需安卓环境、模拟器或手机；TVBox 使用 PC 兼容的 HTTP 接口和直播源，Android JAR / DEX 插件仅限安卓 App。
 
-直接下载：[安装版 EXE](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.8-android-1.0.8/LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe) · [全部版本](https://github.com/zaiming11/LocalVideo/releases)。Android 下载与项目介绍见 [项目首页](../README.md)。
+直接下载：[LocalVideo.exe（Netlify 直接下载）](https://localcinema-zaiming11.netlify.app/LocalVideo.exe) · [安装版 EXE（GitHub 备用）](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.8-android-1.0.8/LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe) · [全部版本](https://github.com/zaiming11/LocalVideo/releases)。Android 下载与项目介绍见 [项目首页](../README.md)。
+
+Netlify 提供完整的 `LocalVideo.exe` 安装包，下载完成后双击安装。
 
 - **推荐安装版**：`dist/LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe`。安装一次，以后从桌面快捷方式打开。不要每次打开安装包。
 - 本机打包后也可直接运行 `dist/win-unpacked/本地影库.exe`。

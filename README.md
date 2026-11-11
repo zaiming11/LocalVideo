@@ -2,7 +2,7 @@
 
 一款用于整理和播放本地视频的应用，提供 Windows 桌面版与 Android 版。支持文件夹导入、媒体库浏览、自然排序、播放记录和进度续播。
 
-[Netlify 在线版](https://localcinema-zaiming11.netlify.app) · [Android 安装包（Netlify）](https://localcinema-zaiming11.netlify.app/updates/LocalVideo-1.0.8-Android.apk)
+[Windows 安装包 LocalVideo.exe（Netlify 直接下载）](https://localcinema-zaiming11.netlify.app/LocalVideo.exe) · [Android 安装包（Netlify）](https://localcinema-zaiming11.netlify.app/updates/LocalVideo-1.0.8-Android.apk) · [Netlify 在线版](https://localcinema-zaiming11.netlify.app)
 
 ## 下载安装
 
@@ -15,7 +15,7 @@
 
 [查看全部版本与更新说明](https://github.com/zaiming11/LocalVideo/releases) · [下载 SHA-256 校验文件](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.8-android-1.0.8/SHA256SUMS.txt)
 
-GitHub 无法访问时可尝试加速镜像。镜像由第三方提供，同步可能延迟；应用内支持自动加速、GitHub 直连和自定义镜像。Windows 当前为测试版，欢迎反馈使用问题。
+GitHub 无法访问时，可使用上方 Netlify 下载。Windows 直接下载完整的 `LocalVideo.exe` 安装包，完成后双击安装。也可尝试上表的第三方镜像，同步可能延迟。Windows 当前为测试版，欢迎反馈使用问题。
 
 请下载上表中的应用文件。GitHub 自动生成的 **Source code (zip / tar.gz)** 是源码包，不能直接安装。
 
