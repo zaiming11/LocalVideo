@@ -5,6 +5,9 @@ const project = path.resolve(__dirname, '..')
 const plugins = process.env.UNI_HBUILDERX_PLUGINS || 'E:/HBuilderX/plugins'
 const cli = path.join(plugins, 'uniapp-cli-vite')
 const output = path.join(__dirname, 'web')
+const qrCodes = spawnSync(process.execPath, [path.join(project, 'tools/generate-download-qrcodes.cjs')], { cwd: project, stdio: 'inherit' })
+if (qrCodes.error) throw qrCodes.error
+if (qrCodes.status) process.exit(qrCodes.status)
 fs.copyFileSync(path.join(project, 'core/update/model.mjs'), path.join(__dirname, 'update-model.mjs'))
 const result = spawnSync(process.execPath, [path.join(cli, 'node_modules/@dcloudio/vite-plugin-uni/bin/uni.js'), 'build', '-p', 'h5'], {
   cwd: cli,

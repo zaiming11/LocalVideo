@@ -1,0 +1,20 @@
+[
+  {
+    "id": "windows",
+    "title": "Windows 安装版",
+    "description": "Windows 10 / 11 · 64 位",
+    "url": "https://localcinema-zaiming11.netlify.app/LocalVideo.exe"
+  },
+  {
+    "id": "android",
+    "title": "Android 安卓版",
+    "description": "Android 6.0 及以上 · ARM64",
+    "url": "https://localcinema-zaiming11.netlify.app/LocalVideo.apk"
+  },
+  {
+    "id": "web",
+    "title": "网页版",
+    "description": "浏览器打开，无需安装",
+    "url": "https://localcinema-zaiming11.netlify.app/"
+  }
+]

@@ -2,7 +2,7 @@
 
 一款用于整理和播放本地视频的应用，提供 Windows 桌面版与 Android 版。支持文件夹导入、媒体库浏览、自然排序、播放记录和进度续播。
 
-[Windows 安装包 LocalVideo.exe（Netlify 直接下载）](https://localcinema-zaiming11.netlify.app/LocalVideo.exe) · [Android 安装包（Netlify）](https://localcinema-zaiming11.netlify.app/updates/LocalVideo-1.0.8-Android.apk) · [Netlify 在线版](https://localcinema-zaiming11.netlify.app)
+[Windows 安装包 LocalVideo.exe（Netlify 直接下载）](https://localcinema-zaiming11.netlify.app/LocalVideo.exe) · [Android 安装包（Netlify）](https://localcinema-zaiming11.netlify.app/LocalVideo.apk) · [Netlify 在线版](https://localcinema-zaiming11.netlify.app)
 
 ## 下载安装
 
@@ -10,10 +10,10 @@
 
 | 平台 | GitHub 下载 | 加速镜像下载 | 版本 | 使用方式 |
 | --- | --- | --- | --- | --- |
-| Windows 10/11 · 64 位 | [安装版 EXE](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.8-android-1.0.8/LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe) | [镜像下载 EXE](https://gh-proxy.com/https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.8-android-1.0.8/LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe) | 1.1.0-alpha.8 | 安装后从桌面或开始菜单打开 |
-| Android 6.0 及以上 · ARM64 | [Android APK](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.8-android-1.0.8/LocalVideo-1.0.8-Android.apk) | [镜像下载 APK](https://gh-proxy.com/https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.8-android-1.0.8/LocalVideo-1.0.8-Android.apk) | 1.0.8 | 在手机上打开 APK 并安装 |
+| Windows 10/11 · 64 位 | [安装版 EXE](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.9-android-1.0.9/LocalVideo-1.1.0-alpha.9-Windows-x64-Setup.exe) | [镜像下载 EXE](https://gh-proxy.com/https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.9-android-1.0.9/LocalVideo-1.1.0-alpha.9-Windows-x64-Setup.exe) | 1.1.0-alpha.9 | 安装后从桌面或开始菜单打开 |
+| Android 6.0 及以上 · ARM64 | [Android APK](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.9-android-1.0.9/LocalVideo-1.0.9-Android.apk) | [镜像下载 APK](https://gh-proxy.com/https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.9-android-1.0.9/LocalVideo-1.0.9-Android.apk) | 1.0.9 | 在手机上打开 APK 并安装 |
 
-[查看全部版本与更新说明](https://github.com/zaiming11/LocalVideo/releases) · [下载 SHA-256 校验文件](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.8-android-1.0.8/SHA256SUMS.txt)
+[查看全部版本与更新说明](https://github.com/zaiming11/LocalVideo/releases) · [下载 SHA-256 校验文件](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.9-android-1.0.9/SHA256SUMS.txt)
 
 GitHub 无法访问时，可使用上方 Netlify 下载。Windows 直接下载完整的 `LocalVideo.exe` 安装包，完成后双击安装。也可尝试上表的第三方镜像，同步可能延迟。Windows 当前为测试版，欢迎反馈使用问题。
 
@@ -25,12 +25,13 @@ GitHub 无法访问时，可使用上方 Netlify 下载。Windows 直接下载�
 2. 在媒体库中切换网格或列表视图，按文件名、添加时间、时长或大小排序。
 3. 点击视频开始播放，可调整倍速、切换全屏；再次打开时可继续上次的播放进度。
 4. 在“文件夹”中按目录浏览，在“最近”中查看播放记录。
+5. Windows、Android 和网页版均可在“设置 → 关于 → 应用下载”查看二维码，扫码下载 Windows / Android 安装包或打开网页版；支持放大二维码和复制链接。
 
 Android 版扫描手机视频时需要视频访问权限，也可以选择文件夹导入。Windows 版直接读取原视频位置，不会把视频复制到安装目录；移动或删除原文件后，需要重新导入。视频能否播放取决于平台与设备支持的编码格式。
 
 ## 从源码运行与打包
 
-`feat/tvbox-integration` 分支的 Windows 版独立运行，无需安卓环境、模拟器或手机。支持 PC 兼容的 XML / JSON、Type 4 HTTP 接口及直播源；Android JAR / DEX 插件仅由安卓 App 执行。兼容性说明见 [TVBox 接入记录](docs/tvbox-compatibility.md)。上方下载链接仍为已发布的稳定版本。
+Windows 版独立运行，无需安卓环境、模拟器或手机。支持 PC 兼容的 XML / JSON、Type 4 HTTP 接口及直播源；Android JAR / DEX 插件仅由安卓 App 执行。兼容性说明见 [TVBox 接入记录](docs/tvbox-compatibility.md)。Windows 当前为测试版，下载链接对应本次发布版本。
 
 项目使用 **Vue 3 + uni-app**，Windows 版通过 **Electron** 封装。
 

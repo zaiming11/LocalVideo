@@ -1,7 +1,11 @@
 // Keep cloud packaging below its free project-size limit by staging only app resources.
 const fs = require('node:fs')
 const path = require('node:path')
+const { spawnSync } = require('node:child_process')
 const root = path.resolve(__dirname, '..')
+const qrCodes = spawnSync(process.execPath, [path.join(__dirname, 'generate-download-qrcodes.cjs')], { cwd: root, stdio: 'inherit' })
+if (qrCodes.error) throw qrCodes.error
+if (qrCodes.status) process.exit(qrCodes.status)
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'))
 const stage = path.join(root, '.backup', `android-release-${manifest.versionName}-${Date.now()}`)
 fs.mkdirSync(stage, { recursive: true })

@@ -1,6 +1,10 @@
 import { DEFAULT_HEADERS, localOrigin, resolveEpisode, apiUrl } from './engine.mjs'
 import { isAndroidTVBox, invokeAndroidSpider, androidPlaybackUrl, requestAndroidTVBox } from './android.js'
 import { restoreLocalRecipe } from './local-files.js'
+// #ifdef H5
+import { isBrowserLocalUrl } from './local-reference.mjs'
+import { requestBrowserTVBoxFile, browserTVBoxMediaUrl } from './browser-local-files.mjs'
+// #endif
 export { isAndroidTVBox }
 export function hasAndroidEngine() {
   return isAndroidTVBox()
@@ -18,6 +22,7 @@ export async function requestTVBox(url, headers = {}, configUrl = url) {
   const input = { url, headers: { ...DEFAULT_HEADERS, ...headers }, allowLocal: localOrigin(configUrl) }
   // #ifdef H5
   if (window.localVideoDesktop?.tvboxRequest) return window.localVideoDesktop.tvboxRequest(input)
+  if (isBrowserLocalUrl(url)) return requestBrowserTVBoxFile(url)
   const response = await fetch('/__tvbox/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) })
   const data = await response.json()
   if (!response.ok) throw new Error(data.error || '无法读取接口')
@@ -35,6 +40,7 @@ export function tvboxMediaUrl(url, headers = {}, allowLocal = false) {
   // #ifdef H5
   // Vue's reactive header objects cannot cross Electron's context bridge.
   if (window.localVideoDesktop?.tvboxMediaUrl) return window.localVideoDesktop.tvboxMediaUrl(url, { ...headers }, allowLocal)
+  if (isBrowserLocalUrl(url)) return browserTVBoxMediaUrl(url)
   const bytes = new TextEncoder().encode(JSON.stringify({ url, headers, allowLocal }))
   let binary = ''; for (const byte of bytes) binary += String.fromCharCode(byte)
   return '/__tvbox/media/' + btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')

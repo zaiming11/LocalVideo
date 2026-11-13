@@ -1,12 +1,12 @@
 # 本地影库 · Windows 桌面版
 
-适用于 Windows 10/11 64 位，无需 HBuilderX、Node.js 或本地预览服务。当前开发版 1.1.0-alpha.3 也无需安卓环境、模拟器或手机；TVBox 使用 PC 兼容的 HTTP 接口和直播源，Android JAR / DEX 插件仅限安卓 App。
+适用于 Windows 10/11 64 位，无需 HBuilderX、Node.js 或本地预览服务。当前版本 1.1.0-alpha.9 也无需安卓环境、模拟器或手机；TVBox 使用 PC 兼容的 HTTP 接口和直播源，Android JAR / DEX 插件仅限安卓 App。
 
-直接下载：[LocalVideo.exe（Netlify 直接下载）](https://localcinema-zaiming11.netlify.app/LocalVideo.exe) · [安装版 EXE（GitHub 备用）](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.8-android-1.0.8/LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe) · [全部版本](https://github.com/zaiming11/LocalVideo/releases)。Android 下载与项目介绍见 [项目首页](../README.md)。
+直接下载：[LocalVideo.exe（Netlify 直接下载）](https://localcinema-zaiming11.netlify.app/LocalVideo.exe) · [安装版 EXE（GitHub 备用）](https://github.com/zaiming11/LocalVideo/releases/download/v1.1.0-alpha.9-android-1.0.9/LocalVideo-1.1.0-alpha.9-Windows-x64-Setup.exe) · [全部版本](https://github.com/zaiming11/LocalVideo/releases)。Android 下载与项目介绍见 [项目首页](../README.md)。
 
 Netlify 提供完整的 `LocalVideo.exe` 安装包，下载完成后双击安装。
 
-- **推荐安装版**：`dist/LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe`。安装一次，以后从桌面快捷方式打开。不要每次打开安装包。
+- **推荐安装版**：`dist/LocalVideo-1.1.0-alpha.9-Windows-x64-Setup.exe`。安装一次，以后从桌面快捷方式打开。不要每次打开安装包。
 - 本机打包后也可直接运行 `dist/win-unpacked/本地影库.exe`。
 
 1.0.0 单文件便携版每次启动会解压整个 Electron 运行环境，退出后删除。现在发布的安装版省掉了这一步，重复打开更快。
@@ -30,4 +30,4 @@ npm.cmd run pack
 
 `assets/icon.svg` 为统一图标源；`npm.cmd run icons` 同步生成 Windows 多尺寸 ICO、Android 六档密度 PNG、512px 预览及 `static/logo.png`。Android 路径已配置在项目 `manifest.json` 中，重新打包 APK 后生效。
 
-应用内更新支持自动加速、GitHub 直连和自定义 HTTPS 镜像。自动模式优先使用 gh-proxy.com，连接或校验失败时重试 GitHub。镜像下载的安装包仍需通过大小和 SHA-256 校验。
+应用内默认使用 Netlify 检查和下载更新，也可切换 GitHub 的自动加速、直连和自定义 HTTPS 镜像。安装包仍需通过大小和 SHA-256 校验。

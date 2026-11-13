@@ -15,15 +15,6 @@
 					<text class="brand-sub">LOCAL CINEMA</text>
 				</view>
 			</view>
-			<view class="top-actions">
-				<view class="tvbox-entry" role="button" @click="openTVBox">TVBox</view>
-				<view class="icon-button" @click="toggleSearch">
-					<AppIcon name="search" :size="18" color="#E9EDE4" />
-				</view>
-				<view class="icon-button icon-button--accent" @click="openAddSheet">
-					<AppIcon name="plus" :size="19" color="#0A0D0A" :stroke="2.2" />
-				</view>
-			</view>
 		</view>
 
 		<view class="home-content" :class="{ 'tvbox-home': activeTab === 'tvbox', 'tvbox-popup-open': tvboxPopupOpen }">
@@ -163,7 +154,7 @@
 						</view>
 					</view>
 
-					<view v-if="searchVisible" class="search-row">
+					<view class="search-row">
 						<view class="search-box">
 							<AppIcon name="search" :size="16" color="#7C857B" />
 							<input
@@ -171,15 +162,14 @@
 								class="search-input"
 								type="text"
 								confirm-type="search"
-								placeholder="搜索影片、文件夹或格式"
+								placeholder="搜索媒体库中的视频"
+								aria-label="搜索媒体库视频"
 								placeholder-class="search-placeholder"
-								:focus="searchVisible"
 							/>
 							<view v-if="query" class="search-clear" @click="query = ''">
 								<AppIcon name="x" :size="12" color="#AAB1A8" />
 							</view>
 						</view>
-						<view class="search-cancel press" @click="closeSearch">取消</view>
 					</view>
 
 					<view class="chip-row">
@@ -222,7 +212,7 @@
 							</view>
 						</view>
 						<text class="empty-title">还没有本地视频</text>
-						<text class="empty-sub">{{ isApp ? '选择视频文件夹，或通过右上角添加按钮手动扫描手机视频。' : '导入一个文件夹，或直接拖拽视频到窗口。' }}</text>
+						<text class="empty-sub">{{ isApp ? '选择视频文件夹，或在设置的媒体库中导入本地视频。' : '导入一个文件夹，或直接拖拽视频到窗口。' }}</text>
 						<view class="primary-btn press" @click="handlePrimaryImport">
 							<AppIcon name="folder" :size="15" color="#0A0D0A" />
 							<text>选择视频文件夹</text>
@@ -483,6 +473,7 @@
 				<view class="settings-group">
 					<text class="settings-group-label">关于</text>
 					<AppUpdateSettings />
+					<AppDownloads />
 					<view class="settings-card">
 						<view class="about-block">
 							<view class="about-mark"><AppIcon name="logo" :size="42" color="#E8FF63" /></view>
@@ -696,6 +687,7 @@ import TVBoxPanel from '../../components/TVBoxPanel.vue'
 import SubpageHeader from '../../components/SubpageHeader.vue'
 import { createSwipeBack } from '../../core/swipe-back.mjs'
 import AppUpdateSettings from '../../components/AppUpdateSettings.vue'
+import AppDownloads from '../../components/AppDownloads.vue'
 import { updateState } from '../../core/update/client.js'
 import AppIcon from '../../components/AppIcon.vue'
 import AppToast from '../../components/AppToast.vue'
@@ -745,7 +737,6 @@ initStore()
 const { sortedVideos, totalDuration, totalSize, continueInfo } = useVideoStore()
 
 const isH5 = detectH5()
-function openTVBox() { switchTab('tvbox') }
 const isApp = detectApp()
 const isDesktop = typeof window !== 'undefined' && !!window.localVideoDesktop
 if (isH5 && !isDesktop) {
@@ -764,7 +755,6 @@ const activeTab = ref('tvbox')
 const tvboxPopupOpen = ref(false)
 onLoad(options => { if ([...validTabs, 'library'].includes(options?.tab)) activeTab.value = options.tab })
 const query = ref('')
-const searchVisible = ref(false)
 const formatFilter = ref('all')
 const folderFilter = ref('')
 const tvboxPanel = ref(null)
@@ -773,7 +763,7 @@ const isFolderPage = computed(() => activeTab.value === 'library' && !!folderFil
 const folderBackSwipe = createSwipeBack({ canGoBack: () => isFolderPage.value && !showSortSheet.value && !showAddSheet.value && !showFormatGuide.value, onBack: closeFolder })
 function closeFolder() {
 	if (!isFolderPage.value) return false
-	folderFilter.value = ''; activeTab.value = 'folders'; searchVisible.value = false
+	folderFilter.value = ''; activeTab.value = 'folders'
 	uni.pageScrollTo({ scrollTop: 0, duration: 180 })
 	return true
 }
@@ -979,18 +969,11 @@ const previewNoticeTitle = computed(() =>
 const previewNoticeSub = computed(() =>
 	previewVideos.value.length
 		? `已读取《汪汪队立大功》第 1 季 ${previewVideos.value.length} 集 4K 原文件，不复制、不上传。播放进度会保存在本机。`
-		: '已载入 4 个示例视频。点击右上角 + 可导入电脑上的本地视频。'
+		: '已载入 4 个示例视频。可在“设置 → 媒体库”中导入电脑上的本地视频。'
 )
 
 watch(activeTab, (tab) => {
 	setLastTab(tab)
-	searchVisible.value = false
-	if (tab === 'library') {
-		setTimeout(() => {
-			// keep the layout stable when the keyboard closes on mobile
-			query.value = query.value
-		}, 50)
-	}
 })
 
 watch(folderFilter, () => {
@@ -1033,16 +1016,6 @@ function historyFallback(entry) {
 	}
 }
 
-function toggleSearch() {
-	searchVisible.value = !searchVisible.value
-	if (!searchVisible.value) query.value = ''
-}
-
-function closeSearch() {
-	searchVisible.value = false
-	query.value = ''
-}
-
 function resetFilters() {
 	formatFilter.value = 'all'
 	folderFilter.value = ''
@@ -1074,9 +1047,6 @@ function setSortDirection(dir) {
 function switchTab(tab) {
 	if (isFolderPage.value) folderFilter.value = ''
 	activeTab.value = tab
-	if (tab !== 'library') {
-		searchVisible.value = false
-	}
 	uni.pageScrollTo({ scrollTop: 0, duration: 220 })
 }
 
@@ -1447,17 +1417,8 @@ async function onDrop(event) {
 }
 .brand-copy { display: flex; flex-direction: column; gap: 1px; }
 .brand-image { width: 42px; height: 42px; }
-.tvbox-entry { padding: 10px 12px; border: 1px solid #405334; border-radius: 20px; color: #dafa6b; font-size: 12px; cursor: pointer; }
 .brand-title { font-size: 19px; font-weight: 850; letter-spacing: -0.04em; line-height: 1.15; }
 .brand-sub { font-size: 8px; font-weight: 700; letter-spacing: 0.3em; color: var(--muted); }
-
-.top-actions { display: flex; align-items: center; gap: 9px; }
-.icon-button--accent {
-	background: var(--accent);
-	border-color: var(--accent);
-	box-shadow: 0 6px 22px rgba(232, 255, 99, 0.18);
-}
-.icon-button--accent:hover { background: #f2ff8f; }
 
 .home-content {
 	position: relative;
@@ -1820,7 +1781,6 @@ async function onDrop(event) {
 .search-input { flex: 1; height: 100%; font-size: 12.5px; color: var(--text); background: transparent; }
 .search-placeholder { color: #636b63; font-size: 12.5px; }
 .search-clear { width: 21px; height: 21px; border-radius: 50%; background: rgba(255, 255, 255, 0.09); display: flex; align-items: center; justify-content: center; }
-.search-cancel { font-size: 12px; color: var(--muted); padding: 8px 2px; flex-shrink: 0; }
 
 .chip-row { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 12px; scrollbar-width: none; }
 .filter-chip {

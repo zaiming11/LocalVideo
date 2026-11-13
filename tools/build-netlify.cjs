@@ -5,6 +5,9 @@ const root = path.resolve(__dirname, '..')
 const plugins = process.env.UNI_HBUILDERX_PLUGINS || 'E:/HBuilderX/plugins'
 const cli = path.join(plugins, 'uniapp-cli-vite')
 const output = path.join(root, 'unpackage/dist/netlify')
+const qrCodes = spawnSync(process.execPath, [path.join(__dirname, 'generate-download-qrcodes.cjs')], { cwd: root, stdio: 'inherit' })
+if (qrCodes.error) throw qrCodes.error
+if (qrCodes.status) process.exit(qrCodes.status)
 if (path.dirname(output) !== path.join(root, 'unpackage/dist') || path.basename(output) !== 'netlify') throw new Error('Unexpected build directory')
 fs.rmSync(output, { recursive: true, force: true })
 const result = spawnSync(process.execPath, [path.join(cli, 'node_modules/@dcloudio/vite-plugin-uni/bin/uni.js'), 'build', '-p', 'h5'], {
@@ -24,4 +27,5 @@ if (updates.error) throw updates.error
 if (updates.status) process.exit(updates.status)
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'updates/version.json'), 'utf8'))
 fs.copyFileSync(path.join(root, 'desktop/.update-publish', manifest.platforms.windows.file), path.join(output, 'LocalVideo.exe'))
+fs.copyFileSync(path.join(root, 'desktop/.update-publish', manifest.platforms.android.file), path.join(output, 'LocalVideo.apk'))
 console.log('Netlify web build ready: ' + output)

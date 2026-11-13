@@ -34,6 +34,8 @@ netlify deploy --site e689e3e5-508c-40da-a3ef-cf4a189a6538 --no-build --prod
 
 手工下载安装支持完整 Windows EXE：[LocalVideo.exe（Netlify 直接下载）](https://localcinema-zaiming11.netlify.app/LocalVideo.exe)。构建脚本将当前清单对应的完整 Setup EXE 另存为站点根目录的 `LocalVideo.exe`，与 Android APK 一样点击链接即可下载；应用内仍使用原有分片更新。每次部署替换为当前版本，直链设置附件下载和不缓存。README 与当前 GitHub Release 同时提供此入口及 GitHub 备用链接。
 
+Android 同时提供固定直链 [LocalVideo.apk](https://localcinema-zaiming11.netlify.app/LocalVideo.apk)，由相同构建脚本复制当前完整 APK，保留 `updates/` 中带版本号的原始文件。三端“设置 → 关于 → 应用下载”共用 `core/downloads.json` 的固定链接；二维码为本地 PNG，不依赖第三方二维码接口。修改链接后运行 `node tools/generate-download-qrcodes.cjs` 重新生成 `static/downloads/`；Windows、Netlify 构建和安卓 staging 也会自动生成，生成器使用 `desktop` 中的开发依赖 `qrcode`。
+
 初次接入时仅同步了已有 Windows `1.1.0-alpha.7`、Android `1.0.7`，当时的二进制不包含双更新来源界面。当前发布流程已提高版本并重新打包；包含新代码的安装包默认使用 Netlify，并可切换 GitHub。旧客户端不会因网页发布而自动获得新代码，需先覆盖安装新版。
 
 下次发布包含双渠道功能的安装包时，应先提高 Windows 的 `desktop/package.json` 版本、Android 的 `manifest.json` 版本与 `versionCode`，完成两端打包，再用 `tools/prepare-updates.cjs` 生成真实安装包记录，然后运行 Netlify 构建/部署。不要仅提高线上清单版本而继续指向旧二进制。

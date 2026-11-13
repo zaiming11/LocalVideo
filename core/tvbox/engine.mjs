@@ -1,4 +1,5 @@
 import { JSON5, XMLParser, XMLValidator, UniversalURL as URL } from './vendor.mjs'
+import { isBrowserLocalUrl } from './local-reference.mjs'
 
 export const DEFAULT_HEADERS = { 'User-Agent': 'okhttp/3.12.13' }
 const list = value => value == null ? [] : Array.isArray(value) ? value : [value]
@@ -74,7 +75,8 @@ export function parseConfig(text, url = '', options = {}) {
     const jar = httpUrl(spec[0], url)
     result.jar = jar ? jar + (spec[1] ? ';md5;' + spec[1] : '') : ''
     const extension = site.ext ?? ''
-    const relativeExtension = typeof extension === 'string' && (/^(?:\.{1,2}\/|\/)/.test(extension.trim()) || localOrigin(url) && /\/local\/[a-f0-9]{32}\/[a-f0-9]{32}\//.test(url) && /^(?![\s{\[]|[a-z][\w+.-]*:)[^?#\r\n]+\.(?:json5?|m?js|py|txt|conf)(?:[?#].*)?$/i.test(extension.trim()))
+    const localFolderUrl = isBrowserLocalUrl(url) || localOrigin(url) && /\/local\/[a-f0-9]{32}\/[a-f0-9]{32}\//.test(url)
+    const relativeExtension = typeof extension === 'string' && (/^(?:\.{1,2}\/|\/)/.test(extension.trim()) || localFolderUrl && /^(?![\s{\[]|[a-z][\w+.-]*:)[^?#\r\n]+\.(?:json5?|m?js|py|txt|conf)(?:[?#].*)?$/i.test(extension.trim()))
     result.ext = relativeExtension ? httpUrl(extension, url) || extension : extension
     return { ...result, ...siteSupport(result, options) }
   })

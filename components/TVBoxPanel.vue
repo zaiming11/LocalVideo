@@ -4,7 +4,7 @@
       <view class="connect panel">
         <text class="section-label">TVBox 配置</text>
         <TVBoxResourcePicker ref="resourcePicker" v-model="address" :display-value="localLabel" @popup-change="resourcePopupOpen = $event" />
-        <view class="local-config-actions"><button :disabled="!!busy || localImportBusy || !localFolderSupported" @click="loadLocalFolder">{{ localImportBusy ? '正在读取文件夹…' : '加载本地配置文件夹' }}</button><text class="hint">{{ localFolderSupported ? '加载文件夹后，手动选择主配置即可应用；支持目录内的 JAR 和规则文件。' : '本地文件夹导入请使用 Windows 桌面版或 Android App。' }}</text></view>
+        <view class="local-config-actions"><button :disabled="!!busy || localImportBusy || !localFolderSupported" @click="loadLocalFolder">{{ localImportBusy ? '正在读取文件夹…' : '加载本地配置文件夹' }}</button><text class="hint">{{ localFolderHint }}</text></view>
         <view v-if="localFolder" class="local-config-dropdown">
           <text class="hint">本地主配置 · {{ localFolder.name }}</text>
           <button class="local-config-select" :disabled="!!busy || localImportBusy" :aria-expanded="!!pendingFolder" @click="pendingFolder = pendingFolder ? null : localFolder"><text>{{ isLocalAddress ? localEntry : '选择本地主配置' }}</text><text>⌄</text></button>
@@ -91,6 +91,13 @@ const localScrollTarget = ref('')
 const resourcePicker = ref(null), resourcePopupOpen = ref(false)
 watch([resourcePopupOpen, pendingFolder], () => emit('popup-change', resourcePopupOpen.value || !!pendingFolder.value))
 const localFolderSupported = canImportTVBoxFolder()
+const localFolderHint = computed(() => {
+  if (!localFolderSupported) return '当前浏览器不支持选择文件夹，请使用新版 Edge 或 Chrome。'
+  // #ifdef H5
+  if (typeof window !== 'undefined' && !window.localVideoDesktop) return '选择文件夹后手动选择主配置。文件仅保存在此浏览器，文件改动后请重新选择；JAR 插件需使用安卓 App。'
+  // #endif
+  return '加载文件夹后，手动选择主配置即可应用；支持目录内的 JAR 和规则文件。'
+})
 const localUrl = computed(() => localFolder.value && localEntry.value ? localEntryUrl(localFolder.value, localEntry.value) : '')
 const isLocalAddress = computed(() => !!localUrl.value && address.value === localUrl.value)
 const localLabel = computed(() => isLocalAddress.value ? `${localFolder.value.name} / ${localEntry.value}` : '')

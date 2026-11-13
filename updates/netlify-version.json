@@ -1,49 +1,49 @@
 {
   "schemaVersion": 1,
-  "publishedAt": "2026-11-11T07:35:43.184Z",
+  "publishedAt": "2026-11-13T07:14:16.763Z",
   "platforms": {
     "windows": {
-      "version": "1.1.0-alpha.8",
-      "file": "LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe",
-      "size": 162899795,
-      "sha256": "74fbfce1bd2086909d60795bae0d7a58bb75c42c97c0fe43fd87fa0fe2aa982d",
-      "notes": "默认通过 Netlify 检查和下载安装包，可在设置中切换 GitHub。Windows 更新包自动合并后安装。",
+      "version": "1.1.0-alpha.9",
+      "file": "LocalVideo-1.1.0-alpha.9-Windows-x64-Setup.exe",
+      "size": 162913060,
+      "sha256": "257d970d62b6474420c9a48ac7d48ee44b872246c50929efbee24f55ba6a9ef4",
+      "notes": "新增三端下载二维码；媒体库搜索框直接显示；网页版支持本地 TVBox 配置文件夹。默认使用 Netlify 更新，可切换 GitHub。",
       "chunks": [
         {
-          "file": "LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe.part001",
+          "file": "LocalVideo-1.1.0-alpha.9-Windows-x64-Setup.exe.part001",
           "size": 33554432,
-          "sha256": "6dd93e03f6740ab3005ae61c7ec38d0bd5c0a0377eef58f22663f295a2f853f6"
+          "sha256": "6d466eddde913bedf7152ff719dd0a080c76e255b91644b60ab93eeba1950d19"
         },
         {
-          "file": "LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe.part002",
+          "file": "LocalVideo-1.1.0-alpha.9-Windows-x64-Setup.exe.part002",
           "size": 33554432,
-          "sha256": "1994ec5e8ecfb1780a9af59d4ebaf2832539ada563a5e18fb294aed4a998bb08"
+          "sha256": "58598ab0cb6e0b2df0d7877dcbcc45d9d5da8b41b903eb59001ef90d875239c3"
         },
         {
-          "file": "LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe.part003",
+          "file": "LocalVideo-1.1.0-alpha.9-Windows-x64-Setup.exe.part003",
           "size": 33554432,
-          "sha256": "a93af41d265d49723931afd6b27c055378f9829bf94ce9cd49e5ccbd3a0c0a67"
+          "sha256": "aea2c65e041c0bba477a5d19a6200a00911dd8ebe971bece412a51a45a9161b6"
         },
         {
-          "file": "LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe.part004",
+          "file": "LocalVideo-1.1.0-alpha.9-Windows-x64-Setup.exe.part004",
           "size": 33554432,
-          "sha256": "2126773af005aab484fe4b3f5ca0c18c5a65f40e05af5a8ebf1156198d294385"
+          "sha256": "75e195179b03c6ce59c1a7fe2c15aded7a110e964b30dbfc081264dae57ed1c4"
         },
         {
-          "file": "LocalVideo-1.1.0-alpha.8-Windows-x64-Setup.exe.part005",
-          "size": 28682067,
-          "sha256": "0c809ca683397f08ef94f5b6355fb31b7169e46c305d45fda004b25309e7ebd8"
+          "file": "LocalVideo-1.1.0-alpha.9-Windows-x64-Setup.exe.part005",
+          "size": 28695332,
+          "sha256": "9db59c6cf58ece183bfe835317ff8e14bf02cbce4f55d689f856a5d0a234254e"
         }
       ]
     },
     "android": {
-      "version": "1.0.8",
-      "file": "LocalVideo-1.0.8-Android.apk",
-      "size": 47174571,
-      "sha256": "6de3714ff181a4b68c72c0a9f954f1a9c5338c87b0fb67f8cb56ce6ae0ad343f",
-      "versionCode": 108,
-      "downloadUrl": "https://localcinema-zaiming11.netlify.app/updates/LocalVideo-1.0.8-Android.apk",
-      "notes": "默认通过 Netlify 检查和下载 APK，可切换 GitHub，保留无全局 URL 接口的检查更新兼容修复。旧版需先手动覆盖安装本版。"
+      "version": "1.0.9",
+      "file": "LocalVideo-1.0.9-Android.apk",
+      "size": 47183249,
+      "sha256": "8faf942ad3ced88e677e0c3ebae16b0b46058c4cd5a6f7eb7966758894eacb43",
+      "versionCode": 109,
+      "downloadUrl": "https://localcinema-zaiming11.netlify.app/updates/LocalVideo-1.0.9-Android.apk",
+      "notes": "新增三端下载二维码，支持放大和复制链接；媒体库搜索框直接显示；沿用原包名及签名，可覆盖安装。"
     }
   }
 }

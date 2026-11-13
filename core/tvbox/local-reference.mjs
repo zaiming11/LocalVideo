@@ -1,3 +1,6 @@
+export const BROWSER_LOCAL_ROOT = 'https://localvideo-folder.invalid/'
+export const isBrowserLocalUrl = value => typeof value === 'string' && value.startsWith(BROWSER_LOCAL_ROOT)
+
 export function localEntryUrl(folder, path) {
   const parts = String(path || '').split('/')
   if (!folder?.baseUrl || !parts.length || parts.some(part => !part || part === '.' || part === '..' || /[\\\0]/.test(part))) throw new Error('本地配置路径无效')
